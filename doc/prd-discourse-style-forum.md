@@ -97,7 +97,7 @@ date: "2025-08-18"
 - **表单与校验**：`react-hook-form` + `zod`
 - **状态**：以 **TanStack Query** 为服务端状态主导；组件内局部 `useState`；尽量避免全局 store。
 - **实时**：用 **`@microsoft/signalr`** 客户端；进入主题详情后加入房间。
-- **安全**：HttpOnly Cookie 承载 Token；Markdown 渲染后进行 **服务端消毒 + 前端只读渲染**。
+- **安全**：HttpOnly Cookie 承载 Token；Markdown 动态渲染时进行 **服务端消毒 + 前端只读渲染**（可选：添加 Redis 缓存已渲染内容）。
 
 **路径别名与配置示例**
 ```ts
@@ -310,7 +310,7 @@ CREATE TABLE posts (
   topic_id BIGINT UNSIGNED NOT NULL,
   author_id BIGINT UNSIGNED NOT NULL,
   content_md MEDIUMTEXT NOT NULL,
-  content_html MEDIUMTEXT NOT NULL,
+  -- content_html 字段移除，改为动态渲染或缓存策略
   reply_to_post_id BIGINT UNSIGNED NULL,
   is_edited TINYINT(1) NOT NULL DEFAULT 0,
   is_deleted TINYINT(1) NOT NULL DEFAULT 0,
@@ -340,7 +340,7 @@ CREATE TABLE notifications (
   topic_id BIGINT UNSIGNED NULL,
   post_id BIGINT UNSIGNED NULL,
   by_user_id BIGINT UNSIGNED NULL,
-  snippet VARCHAR(200),
+  snippet TEXT,
   read_at DATETIME(3) NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   CONSTRAINT fk_n_user FOREIGN KEY (user_id) REFERENCES users(id),
@@ -359,7 +359,7 @@ CREATE TABLE refresh_tokens (
   ua VARCHAR(200) NULL,
   ip VARCHAR(45) NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  UNIQUE KEY uq_token_hash (token_hash),
+  UNIQUE KEY uq_user_token_hash (user_id, token_hash),
   INDEX idx_rt_user (user_id),
   INDEX idx_rt_expires (expires_at),
   CONSTRAINT fk_rt_user FOREIGN KEY (user_id) REFERENCES users(id)
@@ -368,6 +368,7 @@ CREATE TABLE refresh_tokens (
 CREATE TABLE audit_logs (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   actor_user_id BIGINT UNSIGNED NOT NULL,
+  trace_id VARCHAR(64) NULL,
   action VARCHAR(50) NOT NULL,
   target_type VARCHAR(50) NOT NULL,
   target_id BIGINT UNSIGNED NULL,
@@ -375,7 +376,8 @@ CREATE TABLE audit_logs (
   after_json JSON NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   CONSTRAINT fk_audit_user FOREIGN KEY (actor_user_id) REFERENCES users(id),
-  INDEX idx_audit_created (created_at DESC)
+  INDEX idx_audit_created (created_at DESC),
+  INDEX idx_audit_trace (trace_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
