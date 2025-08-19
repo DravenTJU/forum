@@ -242,22 +242,22 @@ module.exports = {
 npx shadcn-ui@latest init
 
 # 添加核心组件
-npx shadcn-ui@latest add button
-npx shadcn-ui@latest add card
-npx shadcn-ui@latest add avatar
-npx shadcn-ui@latest add badge
-npx shadcn-ui@latest add input
-npx shadcn-ui@latest add textarea
-npx shadcn-ui@latest add form
-npx shadcn-ui@latest add dropdown-menu
-npx shadcn-ui@latest add dialog
-npx shadcn-ui@latest add sheet
-npx shadcn-ui@latest add toast
-npx shadcn-ui@latest add tabs
-npx shadcn-ui@latest add separator
-npx shadcn-ui@latest add scroll-area
-npx shadcn-ui@latest add skeleton
-npx shadcn-ui@latest add command
+npx shadcn@latest add button
+npx shadcn@latest add card
+npx shadcn@latest add avatar
+npx shadcn@latest add badge
+npx shadcn@latest add input
+npx shadcn@latest add textarea
+npx shadcn@latest add form
+npx shadcn@latest add dropdown-menu
+npx shadcn@latest add dialog
+npx shadcn@latest add sheet
+npx shadcn@latest add sonner
+npx shadcn@latest add tabs
+npx shadcn@latest add separator
+npx shadcn@latest add scroll-area
+npx shadcn@latest add skeleton
+npx shadcn@latest add command
 ```
 
 ### 2.3 全局样式配置
