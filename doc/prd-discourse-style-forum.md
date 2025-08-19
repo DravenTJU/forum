@@ -20,7 +20,7 @@ date: "2025-08-18"
   - 数据库：**MySQL 8.x（InnoDB, utf8mb4）**  
   - 数据访问：**Dapper**（参数化 SQL，仓储/Query 对象模式），**不使用 ORM**  
   - 实时：**SignalR Hub**（Topic 房间）；前端由 `socket.io-client` 切换为 `@microsoft/signalr`  
-  - 搜索：MySQL **FULLTEXT**（`topics.title`、`posts.content_md`），`MATCH ... AGAINST`  
+  - 搜索：MySQL **FULLTEXT**（`topics.title`、`posts.content_md`），`MATCH ... AGAINST`；中文分词建议后续接入 ElasticSearch 或 Meilisearch  
   - 分页：**Keyset**（基于 `(created_at, id)`）避免深分页  
   - 事务一致性：发帖写入与统计更新使用 **事务**；并发采用 **乐观并发**（`updated_at` 校验）
 
@@ -127,7 +127,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": "http://localhost:4000",
-      "/socket.io": {
+      "/hubs/*": {
         target: "http://localhost:4000",
         ws: true
       }
@@ -202,7 +202,9 @@ public async Task<IEnumerable<TopicListItem>> GetTopicsAsync(TopicQuery q) {
     WHERE t.is_deleted = 0
       AND (@categoryId IS NULL OR t.category_id = @categoryId)
       AND (@tagSlug IS NULL OR g.slug = @tagSlug)
-      AND (@cursorLast IS NULL OR (t.last_posted_at, t.id) < (@cursorLast, @cursorId))
+      AND (@cursorLast IS NULL OR 
+           (t.last_posted_at < @cursorLast OR 
+            (t.last_posted_at = @cursorLast AND t.id < @cursorId)))
     GROUP BY t.id
     ORDER BY t.is_pinned DESC, t.last_posted_at DESC, t.id DESC
     LIMIT @limit;";
@@ -406,7 +408,7 @@ CREATE TABLE audit_logs (
 - `GET  /topics?cursor=&limit=&categoryId=&tag=&sort=latest|hot`
 - `POST /topics`  `{title, contentMd, categoryId, tagSlugs[]}`
 - `GET  /topics/:id`
-- `PATCH /topics/:id`（作者限时或 Mod+）
+- `PATCH /topics/:id`（作者限时或 Mod+，**必须携带 updatedAt 字段用于乐观并发控制**）
 - `DELETE /topics/:id`（作者限时或 Mod+）
 - 管理：`POST /topics/:id/pin` / `POST /topics/:id/lock` / `POST /topics/:id/move`
 
@@ -425,7 +427,7 @@ CREATE TABLE audit_logs (
 ### 11.4 Post
 - `GET  /topics/:topicId/posts?cursor=&limit=`
 - `POST /topics/:topicId/posts` `{contentMd, replyToPostId?}`
-- `PATCH /posts/:id`
+- `PATCH /posts/:id`（**必须携带 updatedAt 字段，否则返回 400 错误**）
 - `DELETE /posts/:id`
 
 ### 11.5 Search & Notifications
@@ -435,7 +437,8 @@ CREATE TABLE audit_logs (
 
 **事务与并发（关键路径）**
 - 发帖：`BEGIN; INSERT post; UPDATE topics SET reply_count=reply_count+1,last_posted_at=NOW(3),last_poster_id=@uid WHERE id=@topicId; COMMIT;`
-- 编辑：要求 `updated_at` 匹配（乐观并发），不匹配返回 409。
+- 删帖：逻辑删除后需事务内同步更新 `reply_count`；定期任务校正统计字段防止不一致
+- 编辑：PATCH 请求必须携带 `updatedAt` 字段，与数据库 `updated_at` 匹配（乐观并发），不匹配返回 409；缺少字段返回 400。
 
 ## 12. 实时通信（**SignalR**）
 
@@ -543,7 +546,7 @@ CSRF_COOKIE_NAME, CSRF_HEADER_NAME
 - **邮件送达率**：使用可靠 SMTP/供应商并监控退信。
 - **SQL 注入风险**：Dapper 全量使用参数化；拒绝字符串拼接
 - **迁移管理**：采用 DbUp/Flyway，流水化执行 SQL，防止漂移
-- **FULLTEXT 相关度**：结合时间衰减或二次排序优化结果质量
+- **FULLTEXT 相关度**：MySQL FULLTEXT 在中文环境分词效果有限，建议生产环境接入 ElasticSearch 或 Meilisearch；结合时间衰减或二次排序优化结果质量
 - **SignalR 扩展**：生产环境启用 Redis backplane；Nginx 保持 WS 升级
 - **Markdown XSS**：强制后端消毒 + 白名单渲染；增加安全测试。
 - **shadcn 在 Vite 的适配**：固定组件导入策略，抽离 UI 基础层，提供团队规范文档。
