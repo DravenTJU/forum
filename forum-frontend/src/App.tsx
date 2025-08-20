@@ -66,6 +66,7 @@ function HomePage() {
 
 function App() {
   const { isLoadingUser } = useAuth()
+  const isDev = import.meta.env.DEV
 
   if (isLoadingUser) {
     return (
@@ -80,15 +81,20 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       
-      {/* 受保护的路由 */}
-      <Route 
-        path="/" 
-        element={
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        } 
-      />
+      {/* 开发环境：直接访问首页 */}
+      {isDev ? (
+        <Route path="/" element={<HomePage />} />
+      ) : (
+        /* 生产环境：受保护的路由 */
+        <Route 
+          path="/" 
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          } 
+        />
+      )}
       
       {/* 默认重定向到首页 */}
       <Route path="*" element={<Navigate to="/" replace />} />
