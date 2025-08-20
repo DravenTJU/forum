@@ -240,7 +240,7 @@ CREATE TABLE user_roles (
   user_id BIGINT UNSIGNED NOT NULL,
   role ENUM('user','mod','admin') NOT NULL,
   PRIMARY KEY (user_id, role),
-  CONSTRAINT fk_user_roles_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  INDEX idx_user_roles_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Categories, Tags, Moderators
@@ -259,8 +259,8 @@ CREATE TABLE category_moderators (
   category_id BIGINT UNSIGNED NOT NULL,
   user_id BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (category_id, user_id),
-  CONSTRAINT fk_cat_mod_cat FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
-  CONSTRAINT fk_cat_mod_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  INDEX idx_cat_mod_category (category_id),
+  INDEX idx_cat_mod_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE tags (
@@ -289,11 +289,11 @@ CREATE TABLE topics (
   last_poster_id BIGINT UNSIGNED NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-  CONSTRAINT fk_topics_author FOREIGN KEY (author_id) REFERENCES users(id),
-  CONSTRAINT fk_topics_category FOREIGN KEY (category_id) REFERENCES categories(id),
-  CONSTRAINT fk_topics_lastposter FOREIGN KEY (last_poster_id) REFERENCES users(id),
   UNIQUE KEY uq_topic_slug (category_id, slug),
   INDEX idx_topic_cat_last (category_id, is_deleted, last_posted_at DESC, id DESC),
+  INDEX idx_topic_author (author_id),
+  INDEX idx_topic_category (category_id),
+  INDEX idx_topic_last_poster (last_poster_id),
   FULLTEXT KEY ftx_topic_title (title)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -301,8 +301,8 @@ CREATE TABLE topic_tags (
   topic_id BIGINT UNSIGNED NOT NULL,
   tag_id BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (topic_id, tag_id),
-  CONSTRAINT fk_tt_topic FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE,
-  CONSTRAINT fk_tt_tag FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+  INDEX idx_tt_topic (topic_id),
+  INDEX idx_tt_tag (tag_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE posts (
@@ -317,10 +317,10 @@ CREATE TABLE posts (
   deleted_at DATETIME(3) NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-  CONSTRAINT fk_posts_topic FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE,
-  CONSTRAINT fk_posts_author FOREIGN KEY (author_id) REFERENCES users(id),
-  CONSTRAINT fk_posts_reply_to FOREIGN KEY (reply_to_post_id) REFERENCES posts(id),
   INDEX idx_posts_topic_created (topic_id, created_at, id),
+  INDEX idx_posts_author (author_id),
+  INDEX idx_posts_topic (topic_id),
+  INDEX idx_posts_reply_to (reply_to_post_id),
   FULLTEXT KEY ftx_posts_content (content_md)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -328,8 +328,8 @@ CREATE TABLE post_mentions (
   post_id BIGINT UNSIGNED NOT NULL,
   mentioned_user_id BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (post_id, mentioned_user_id),
-  CONSTRAINT fk_pm_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-  CONSTRAINT fk_pm_user FOREIGN KEY (mentioned_user_id) REFERENCES users(id) ON DELETE CASCADE
+  INDEX idx_pm_post (post_id),
+  INDEX idx_pm_user (mentioned_user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Notifications & Tokens & Audit
@@ -343,11 +343,11 @@ CREATE TABLE notifications (
   snippet TEXT,
   read_at DATETIME(3) NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  CONSTRAINT fk_n_user FOREIGN KEY (user_id) REFERENCES users(id),
-  CONSTRAINT fk_n_topic FOREIGN KEY (topic_id) REFERENCES topics(id),
-  CONSTRAINT fk_n_post FOREIGN KEY (post_id) REFERENCES posts(id),
-  CONSTRAINT fk_n_byuser FOREIGN KEY (by_user_id) REFERENCES users(id),
-  INDEX idx_n_user_created (user_id, created_at DESC)
+  INDEX idx_n_user_created (user_id, created_at DESC),
+  INDEX idx_n_user (user_id),
+  INDEX idx_n_topic (topic_id),
+  INDEX idx_n_post (post_id),
+  INDEX idx_n_byuser (by_user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE refresh_tokens (
@@ -361,8 +361,7 @@ CREATE TABLE refresh_tokens (
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   UNIQUE KEY uq_user_token_hash (user_id, token_hash),
   INDEX idx_rt_user (user_id),
-  INDEX idx_rt_expires (expires_at),
-  CONSTRAINT fk_rt_user FOREIGN KEY (user_id) REFERENCES users(id)
+  INDEX idx_rt_expires (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE audit_logs (
@@ -375,7 +374,7 @@ CREATE TABLE audit_logs (
   before_json JSON NULL,
   after_json JSON NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  CONSTRAINT fk_audit_user FOREIGN KEY (actor_user_id) REFERENCES users(id),
+  INDEX idx_audit_actor (actor_user_id),
   INDEX idx_audit_created (created_at DESC),
   INDEX idx_audit_trace (trace_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
