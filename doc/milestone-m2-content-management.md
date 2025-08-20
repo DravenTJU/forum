@@ -1778,6 +1778,1284 @@ public class TopicService : ITopicService
 
 ---
 
+## 🎨 Day 7-10: 前端界面实现
+
+### 4.1 主题列表页面
+
+**`pages/HomePage.tsx`**
+```tsx
+import { useState, useEffect } from 'react';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { Loader2, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TopicListCard } from '@/components/topics/TopicListCard';
+import { CategoryFilter } from '@/components/filters/CategoryFilter';
+import { TagFilter } from '@/components/filters/TagFilter';
+import { SortFilter } from '@/components/filters/SortFilter';
+import { useAuth } from '@/hooks/useAuth';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import { api } from '@/lib/api';
+
+interface HomePageProps {}
+
+export function HomePage({}: HomePageProps) {
+  const { user } = useAuth();
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState('latest');
+
+  // 无限滚动查询
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useInfiniteQuery({
+    queryKey: ['topics', { categoryId: selectedCategory, tags: selectedTags, sort: sortBy }],
+    queryFn: ({ pageParam = null }) =>
+      api.get('/topics', {
+        params: {
+          categoryId: selectedCategory,
+          tagSlugs: selectedTags,
+          sort: sortBy,
+          cursor: pageParam?.lastPostedAt,
+          cursorId: pageParam?.id,
+          limit: 20,
+        },
+      }).then(res => res.data),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  });
+
+  // 无限滚动触发器
+  const { ref: loadMoreRef } = useIntersectionObserver({
+    onIntersect: () => {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+  });
+
+  const allTopics = data?.pages.flatMap(page => page.topics) ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600">加载主题列表失败</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      {/* 页面头部 */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">最新主题</h1>
+        {user && (
+          <Button asChild>
+            <a href="/new">
+              <Plus className="w-4 h-4 mr-2" />
+              发布主题
+            </a>
+          </Button>
+        )}
+      </div>
+
+      {/* 筛选器 */}
+      <div className="flex flex-wrap gap-4 mb-6 p-4 bg-card rounded-lg border">
+        <CategoryFilter
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+        />
+        <TagFilter
+          selectedTags={selectedTags}
+          onTagsChange={setSelectedTags}
+        />
+        <SortFilter
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+        />
+      </div>
+
+      {/* 主题列表 */}
+      <div className="space-y-4">
+        {allTopics.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">暂无主题</p>
+          </div>
+        ) : (
+          <>
+            {allTopics.map((topic) => (
+              <TopicListCard key={topic.id} topic={topic} />
+            ))}
+            
+            {/* 加载更多触发器 */}
+            {hasNextPage && (
+              <div ref={loadMoreRef} className="flex justify-center py-4">
+                {isFetchingNextPage && (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+**`components/topics/TopicListCard.tsx`**
+```tsx
+import { formatDistanceToNow } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import { Eye, MessageCircle, Pin, Lock } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+
+interface TopicListCardProps {
+  topic: {
+    id: number;
+    title: string;
+    slug: string;
+    excerpt?: string;
+    featuredImageUrl?: string;
+    isPinned: boolean;
+    isLocked: boolean;
+    replyCount: number;
+    viewCount: number;
+    lastPostedAt?: string;
+    createdAt: string;
+    author: {
+      id: number;
+      username: string;
+      avatarUrl?: string;
+    };
+    lastPoster?: {
+      id: number;
+      username: string;
+      avatarUrl?: string;
+    };
+    category: {
+      id: number;
+      name: string;
+      slug: string;
+      color?: string;
+    };
+    tags: Array<{
+      id: number;
+      name: string;
+      slug: string;
+      color?: string;
+    }>;
+  };
+}
+
+export function TopicListCard({ topic }: TopicListCardProps) {
+  const lastActivity = topic.lastPostedAt || topic.createdAt;
+
+  return (
+    <Card className={cn(
+      "hover:shadow-md transition-shadow",
+      topic.isPinned && "border-primary/50 bg-primary/5"
+    )}>
+      <CardContent className="p-6">
+        <div className="flex gap-4">
+          {/* 作者头像 */}
+          <div className="flex-shrink-0">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={topic.author.avatarUrl} />
+              <AvatarFallback>
+                {topic.author.username.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+
+          {/* 主要内容 */}
+          <div className="flex-1 min-w-0">
+            {/* 标题行 */}
+            <div className="flex items-start gap-2 mb-2">
+              {topic.isPinned && (
+                <Pin className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
+              )}
+              {topic.isLocked && (
+                <Lock className="w-4 h-4 text-muted-foreground mt-1 flex-shrink-0" />
+              )}
+              <h3 className="font-medium text-lg leading-tight">
+                <a
+                  href={`/t/${topic.id}/${topic.slug}`}
+                  className="hover:text-primary transition-colors"
+                >
+                  {topic.title}
+                </a>
+              </h3>
+            </div>
+
+            {/* 摘要 */}
+            {topic.excerpt && (
+              <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                {topic.excerpt}
+              </p>
+            )}
+
+            {/* 分类和标签 */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Badge
+                variant="secondary"
+                style={{
+                  backgroundColor: topic.category.color 
+                    ? `${topic.category.color}20` 
+                    : undefined,
+                  borderColor: topic.category.color,
+                }}
+              >
+                {topic.category.name}
+              </Badge>
+              
+              {topic.tags.map((tag) => (
+                <Badge
+                  key={tag.id}
+                  variant="outline"
+                  className="text-xs"
+                  style={{
+                    color: tag.color,
+                    borderColor: tag.color,
+                  }}
+                >
+                  #{tag.name}
+                </Badge>
+              ))}
+            </div>
+
+            {/* 底部信息 */}
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="flex items-center gap-4">
+                <span>
+                  由 <span className="font-medium">{topic.author.username}</span> 发布
+                </span>
+                <span>
+                  {formatDistanceToNow(new Date(topic.createdAt), {
+                    addSuffix: true,
+                    locale: zhCN,
+                  })}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <MessageCircle className="w-4 h-4" />
+                  <span>{topic.replyCount}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Eye className="w-4 h-4" />
+                  <span>{topic.viewCount}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 最后回复 */}
+          {topic.lastPoster && (
+            <div className="flex-shrink-0 text-right">
+              <div className="flex items-center gap-2 mb-1">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src={topic.lastPoster.avatarUrl} />
+                  <AvatarFallback className="text-xs">
+                    {topic.lastPoster.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium">
+                  {topic.lastPoster.username}
+                </span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(lastActivity), {
+                  addSuffix: true,
+                  locale: zhCN,
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+### 4.2 主题详情页面
+
+**`pages/TopicDetailPage.tsx`**
+```tsx
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Edit, Trash2, Pin, Lock, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { PostCard } from '@/components/posts/PostCard';
+import { PostComposer } from '@/components/posts/PostComposer';
+import { TopicHeader } from '@/components/topics/TopicHeader';
+import { TopicTimeline } from '@/components/topics/TopicTimeline';
+import { useAuth } from '@/hooks/useAuth';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import { api } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
+
+export function TopicDetailPage() {
+  const { id, slug } = useParams<{ id: string; slug?: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [showComposer, setShowComposer] = useState(false);
+
+  // 获取主题详情
+  const { data: topic, isLoading: topicLoading } = useQuery({
+    queryKey: ['topic', id],
+    queryFn: () => api.get(`/topics/${id}`).then(res => res.data),
+    enabled: !!id,
+  });
+
+  // 获取帖子列表（无限滚动）
+  const {
+    data: postsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: postsLoading,
+  } = useInfiniteQuery({
+    queryKey: ['posts', id],
+    queryFn: ({ pageParam = null }) =>
+      api.get(`/topics/${id}/posts`, {
+        params: {
+          cursor: pageParam?.createdAt,
+          cursorId: pageParam?.id,
+          limit: 20,
+        },
+      }).then(res => res.data),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    enabled: !!id,
+  });
+
+  // 无限滚动触发器
+  const { ref: loadMoreRef } = useIntersectionObserver({
+    onIntersect: () => {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+  });
+
+  // 删除主题
+  const deleteTopicMutation = useMutation({
+    mutationFn: () => api.delete(`/topics/${id}`),
+    onSuccess: () => {
+      toast({ title: '主题已删除' });
+      navigate('/');
+    },
+  });
+
+  // 置顶/取消置顶
+  const pinTopicMutation = useMutation({
+    mutationFn: () => api.post(`/topics/${id}/pin`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['topic', id] });
+      toast({ title: topic?.isPinned ? '已取消置顶' : '已置顶' });
+    },
+  });
+
+  // 锁定/解锁
+  const lockTopicMutation = useMutation({
+    mutationFn: () => api.post(`/topics/${id}/lock`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['topic', id] });
+      toast({ title: topic?.isLocked ? '已解锁' : '已锁定' });
+    },
+  });
+
+  const allPosts = postsData?.pages.flatMap(page => page.posts) ?? [];
+  const canModerate = user && (user.role === 'admin' || user.role === 'mod');
+  const canEdit = user && (user.id === topic?.authorId || canModerate);
+
+  if (topicLoading || postsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!topic) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600">主题不存在或已被删除</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* 主要内容区域 */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* 返回按钮 */}
+          <Button variant="ghost" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            返回
+          </Button>
+
+          {/* 主题头部 */}
+          <TopicHeader topic={topic} />
+
+          {/* 操作按钮 */}
+          {canEdit && (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" asChild>
+                <a href={`/t/${id}/edit`}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  编辑
+                </a>
+              </Button>
+              
+              {canModerate && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => pinTopicMutation.mutate()}
+                    disabled={pinTopicMutation.isPending}
+                  >
+                    <Pin className="w-4 h-4 mr-2" />
+                    {topic.isPinned ? '取消置顶' : '置顶'}
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => lockTopicMutation.mutate()}
+                    disabled={lockTopicMutation.isPending}
+                  >
+                    <Lock className="w-4 h-4 mr-2" />
+                    {topic.isLocked ? '解锁' : '锁定'}
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                      if (confirm('确定要删除这个主题吗？')) {
+                        deleteTopicMutation.mutate();
+                      }
+                    }}
+                    disabled={deleteTopicMutation.isPending}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    删除
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* 帖子列表 */}
+          <div className="space-y-6">
+            {allPosts.map((post, index) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                postNumber={index + 1}
+                isFirstPost={index === 0}
+              />
+            ))}
+
+            {/* 加载更多触发器 */}
+            {hasNextPage && (
+              <div ref={loadMoreRef} className="flex justify-center py-4">
+                {isFetchingNextPage && (
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 回复按钮 */}
+          {user && !topic.isLocked && (
+            <div className="flex justify-center">
+              <Button
+                onClick={() => setShowComposer(true)}
+                size="lg"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                回复主题
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* 侧边栏 */}
+        <div className="lg:col-span-1">
+          <TopicTimeline
+            totalPosts={allPosts.length}
+            currentPost={1} // 可以根据滚动位置计算
+          />
+        </div>
+      </div>
+
+      {/* 回复编辑器 */}
+      {showComposer && (
+        <PostComposer
+          topicId={Number(id)}
+          onClose={() => setShowComposer(false)}
+          onSuccess={() => {
+            setShowComposer(false);
+            queryClient.invalidateQueries({ queryKey: ['posts', id] });
+          }}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+### 4.3 帖子卡片组件
+
+**`components/posts/PostCard.tsx`**
+```tsx
+import { useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import { MoreHorizontal, Edit, Trash2, Reply, Heart, Flag } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { useAuth } from '@/hooks/useAuth';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
+
+interface PostCardProps {
+  post: {
+    id: number;
+    topicId: number;
+    contentMd: string;
+    isEdited: boolean;
+    editReason?: string;
+    editCount: number;
+    createdAt: string;
+    updatedAt: string;
+    author: {
+      id: number;
+      username: string;
+      avatarUrl?: string;
+    };
+    replyToPost?: {
+      id: number;
+      author: {
+        username: string;
+      };
+      contentMd: string;
+    };
+    mentions: Array<{
+      mentionedUserId: number;
+      username: string;
+    }>;
+  };
+  postNumber: number;
+  isFirstPost?: boolean;
+}
+
+export function PostCard({ post, postNumber, isFirstPost = false }: PostCardProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [showEditForm, setShowEditForm] = useState(false);
+
+  // 删除帖子
+  const deletePostMutation = useMutation({
+    mutationFn: () => api.delete(`/posts/${post.id}`),
+    onSuccess: () => {
+      toast({ title: '帖子已删除' });
+      queryClient.invalidateQueries({ queryKey: ['posts', post.topicId] });
+    },
+  });
+
+  // 点赞帖子
+  const likePostMutation = useMutation({
+    mutationFn: () => api.post(`/posts/${post.id}/like`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts', post.topicId] });
+    },
+  });
+
+  const canEdit = user && (
+    user.id === post.author.id || 
+    user.role === 'admin' || 
+    user.role === 'mod'
+  );
+
+  const canDelete = canEdit && !isFirstPost; // 首帖不能单独删除
+
+  return (
+    <Card id={`post-${post.id}`} className="relative">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={post.author.avatarUrl} />
+              <AvatarFallback>
+                {post.author.username.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{post.author.username}</span>
+                {isFirstPost && (
+                  <Badge variant="secondary">楼主</Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>#{postNumber}</span>
+                <span>•</span>
+                <span>
+                  {formatDistanceToNow(new Date(post.createdAt), {
+                    addSuffix: true,
+                    locale: zhCN,
+                  })}
+                </span>
+                {post.isEdited && (
+                  <>
+                    <span>•</span>
+                    <span className="text-xs">已编辑</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 操作菜单 */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(`${window.location.origin}/t/${post.topicId}#post-${post.id}`)}>
+                复制链接
+              </DropdownMenuItem>
+              
+              {user && (
+                <DropdownMenuItem>
+                  <Flag className="w-4 h-4 mr-2" />
+                  举报
+                </DropdownMenuItem>
+              )}
+              
+              {canEdit && (
+                <DropdownMenuItem onClick={() => setShowEditForm(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  编辑
+                </DropdownMenuItem>
+              )}
+              
+              {canDelete && (
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => {
+                    if (confirm('确定要删除这个帖子吗？')) {
+                      deletePostMutation.mutate();
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  删除
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* 回复引用 */}
+        {post.replyToPost && (
+          <div className="mt-3 p-3 bg-muted rounded-lg border-l-4 border-primary">
+            <div className="text-sm font-medium mb-1">
+              回复 @{post.replyToPost.author.username}
+            </div>
+            <div className="text-sm text-muted-foreground line-clamp-3">
+              <MarkdownRenderer content={post.replyToPost.contentMd} />
+            </div>
+          </div>
+        )}
+      </CardHeader>
+
+      <CardContent className="pt-0">
+        {/* 帖子内容 */}
+        <div className="prose prose-sm max-w-none">
+          <MarkdownRenderer content={post.contentMd} />
+        </div>
+
+        {/* 提及的用户 */}
+        {post.mentions.length > 0 && (
+          <div className="mt-4 pt-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              提及了: {post.mentions.map(m => `@${m.username}`).join(', ')}
+            </div>
+          </div>
+        )}
+
+        {/* 编辑信息 */}
+        {post.isEdited && post.editReason && (
+          <div className="mt-4 pt-4 border-t">
+            <div className="text-xs text-muted-foreground">
+              编辑原因: {post.editReason}
+            </div>
+          </div>
+        )}
+
+        {/* 操作按钮 */}
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+          {user && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => likePostMutation.mutate()}
+                disabled={likePostMutation.isPending}
+              >
+                <Heart className="w-4 h-4 mr-1" />
+                点赞
+              </Button>
+              
+              <Button variant="ghost" size="sm">
+                <Reply className="w-4 h-4 mr-1" />
+                回复
+              </Button>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+### 4.4 浮动编辑器组件
+
+**`components/posts/PostComposer.tsx`**
+```tsx
+import { useState, useRef } from 'react';
+import { X, Send, Eye, Bold, Italic, Code, Link, Image } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { useMutation } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
+
+interface PostComposerProps {
+  topicId: number;
+  replyToPostId?: number;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+export function PostComposer({ topicId, replyToPostId, onClose, onSuccess }: PostComposerProps) {
+  const [content, setContent] = useState('');
+  const [activeTab, setActiveTab] = useState('write');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 创建帖子
+  const createPostMutation = useMutation({
+    mutationFn: (data: { contentMd: string; replyToPostId?: number }) =>
+      api.post(`/topics/${topicId}/posts`, data),
+    onSuccess: () => {
+      toast({ title: '回复发布成功' });
+      onSuccess();
+    },
+    onError: (error: any) => {
+      toast({
+        title: '发布失败',
+        description: error.response?.data?.message || '请稍后重试',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!content.trim()) {
+      toast({
+        title: '内容不能为空',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    createPostMutation.mutate({
+      contentMd: content,
+      replyToPostId,
+    });
+  };
+
+  const insertMarkdown = (before: string, after: string = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    
+    const newContent = 
+      content.substring(0, start) + 
+      before + selectedText + after + 
+      content.substring(end);
+    
+    setContent(newContent);
+    
+    // 重新设置光标位置
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(
+        start + before.length,
+        start + before.length + selectedText.length
+      );
+    }, 0);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <CardHeader className="flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <CardTitle>
+              {replyToPostId ? '回复帖子' : '发布回复'}
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="flex-1 flex flex-col min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <TabsList>
+                <TabsTrigger value="write">编写</TabsTrigger>
+                <TabsTrigger value="preview">预览</TabsTrigger>
+              </TabsList>
+
+              {/* Markdown 工具栏 */}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => insertMarkdown('**', '**')}
+                  title="粗体"
+                >
+                  <Bold className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => insertMarkdown('*', '*')}
+                  title="斜体"
+                >
+                  <Italic className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => insertMarkdown('`', '`')}
+                  title="行内代码"
+                >
+                  <Code className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => insertMarkdown('[', '](url)')}
+                  title="链接"
+                >
+                  <Link className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => insertMarkdown('![alt](', ')')}
+                  title="图片"
+                >
+                  <Image className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-0">
+              <TabsContent value="write" className="h-full mt-0">
+                <Textarea
+                  ref={textareaRef}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="写下你的回复... 支持 Markdown 格式"
+                  className="h-full min-h-96 resize-none font-mono"
+                />
+              </TabsContent>
+
+              <TabsContent value="preview" className="h-full mt-0">
+                <div className="h-full min-h-96 p-4 border rounded-md bg-background overflow-auto">
+                  {content ? (
+                    <div className="prose prose-sm max-w-none">
+                      <MarkdownRenderer content={content} />
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">暂无内容预览</p>
+                  )}
+                </div>
+              </TabsContent>
+            </div>
+
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                支持 Markdown 语法 • {content.length} 字符
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={onClose}>
+                  取消
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!content.trim() || createPostMutation.isPending}
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  {createPostMutation.isPending ? '发布中...' : '发布回复'}
+                </Button>
+              </div>
+            </div>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+### 4.5 Markdown 渲染器
+
+**`components/markdown/MarkdownRenderer.tsx`**
+```tsx
+import { useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeSanitize from 'rehype-sanitize';
+import { cn } from '@/lib/utils';
+
+interface MarkdownRendererProps {
+  content: string;
+  className?: string;
+}
+
+export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+  const processedContent = useMemo(() => {
+    // 处理 @ 提及
+    return content.replace(
+      /@(\w+)/g,
+      '[@$1](/users/$1)'
+    );
+  }, [content]);
+
+  return (
+    <div className={cn('markdown-content', className)}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        rehypePlugins={[rehypeHighlight, rehypeSanitize]}
+        components={{
+          // 自定义链接渲染
+          a: ({ href, children, ...props }) => (
+            <a
+              href={href}
+              target={href?.startsWith('http') ? '_blank' : undefined}
+              rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
+              className="text-primary hover:underline"
+              {...props}
+            >
+              {children}
+            </a>
+          ),
+          // 自定义代码块渲染
+          code: ({ className, children, ...props }) => {
+            const match = /language-(\w+)/.exec(className || '');
+            return match ? (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            ) : (
+              <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>
+                {children}
+              </code>
+            );
+          },
+          // 自定义表格渲染
+          table: ({ children, ...props }) => (
+            <div className="overflow-x-auto">
+              <table className="min-w-full border-collapse border border-border" {...props}>
+                {children}
+              </table>
+            </div>
+          ),
+          th: ({ children, ...props }) => (
+            <th className="border border-border bg-muted p-2 text-left font-medium" {...props}>
+              {children}
+            </th>
+          ),
+          td: ({ children, ...props }) => (
+            <td className="border border-border p-2" {...props}>
+              {children}
+            </td>
+          ),
+          // 自定义引用块渲染
+          blockquote: ({ children, ...props }) => (
+            <blockquote className="border-l-4 border-primary pl-4 my-4 italic text-muted-foreground" {...props}>
+              {children}
+            </blockquote>
+          ),
+        }}
+      >
+        {processedContent}
+      </ReactMarkdown>
+    </div>
+  );
+}
+```
+
+### 4.6 创建主题页面
+
+**`pages/CreateTopicPage.tsx`**
+```tsx
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { ArrowLeft, Save } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CategorySelect } from '@/components/forms/CategorySelect';
+import { TagInput } from '@/components/forms/TagInput';
+import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useMutation } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
+
+const createTopicSchema = z.object({
+  title: z.string().min(2, '标题至少需要2个字符').max(200, '标题不能超过200个字符'),
+  content: z.string().min(10, '内容至少需要10个字符'),
+  categoryId: z.number().min(1, '请选择分类'),
+  tagSlugs: z.array(z.string()).optional(),
+  featuredImageUrl: z.string().url().optional().or(z.literal('')),
+});
+
+type CreateTopicForm = z.infer<typeof createTopicSchema>;
+
+export function CreateTopicPage() {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('write');
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<CreateTopicForm>({
+    resolver: zodResolver(createTopicSchema),
+  });
+
+  const content = watch('content') || '';
+
+  // 创建主题
+  const createTopicMutation = useMutation({
+    mutationFn: (data: CreateTopicForm) => api.post('/topics', data),
+    onSuccess: (response) => {
+      toast({ title: '主题创建成功' });
+      navigate(`/t/${response.data.id}/${response.data.slug}`);
+    },
+    onError: (error: any) => {
+      toast({
+        title: '创建失败',
+        description: error.response?.data?.message || '请稍后重试',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const onSubmit = (data: CreateTopicForm) => {
+    createTopicMutation.mutate(data);
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto">
+        {/* 页面头部 */}
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="ghost" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            返回
+          </Button>
+          <h1 className="text-2xl font-bold">发布新主题</h1>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>基本信息</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 标题 */}
+              <div>
+                <Label htmlFor="title">标题 *</Label>
+                <Input
+                  id="title"
+                  {...register('title')}
+                  placeholder="请输入主题标题"
+                  className="mt-1"
+                />
+                {errors.title && (
+                  <p className="text-sm text-destructive mt-1">
+                    {errors.title.message}
+                  </p>
+                )}
+              </div>
+
+              {/* 分类 */}
+              <div>
+                <Label htmlFor="categoryId">分类 *</Label>
+                <CategorySelect
+                  value={watch('categoryId')}
+                  onValueChange={(value) => setValue('categoryId', value)}
+                />
+                {errors.categoryId && (
+                  <p className="text-sm text-destructive mt-1">
+                    {errors.categoryId.message}
+                  </p>
+                )}
+              </div>
+
+              {/* 标签 */}
+              <div>
+                <Label htmlFor="tags">标签</Label>
+                <TagInput
+                  value={watch('tagSlugs') || []}
+                  onChange={(tags) => setValue('tagSlugs', tags)}
+                  placeholder="输入标签名称"
+                />
+              </div>
+
+              {/* 特色图片 */}
+              <div>
+                <Label htmlFor="featuredImageUrl">特色图片 URL</Label>
+                <Input
+                  id="featuredImageUrl"
+                  {...register('featuredImageUrl')}
+                  placeholder="https://example.com/image.jpg"
+                  className="mt-1"
+                />
+                {errors.featuredImageUrl && (
+                  <p className="text-sm text-destructive mt-1">
+                    {errors.featuredImageUrl.message}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>内容</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-4">
+                  <TabsTrigger value="write">编写</TabsTrigger>
+                  <TabsTrigger value="preview">预览</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="write" className="mt-0">
+                  <Textarea
+                    {...register('content')}
+                    placeholder="请输入主题内容，支持 Markdown 格式..."
+                    className="min-h-96 font-mono"
+                  />
+                  {errors.content && (
+                    <p className="text-sm text-destructive mt-1">
+                      {errors.content.message}
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="preview" className="mt-0">
+                  <div className="min-h-96 p-4 border rounded-md bg-background">
+                    {content ? (
+                      <div className="prose prose-sm max-w-none">
+                        <MarkdownRenderer content={content} />
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">暂无内容预览</p>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* 操作按钮 */}
+          <div className="flex justify-end gap-4">
+            <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+              取消
+            </Button>
+            <Button
+              type="submit"
+              disabled={createTopicMutation.isPending}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {createTopicMutation.isPending ? '发布中...' : '发布主题'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
 ## ✅ M2 验收清单
 
 ### 后端 API 完整性
