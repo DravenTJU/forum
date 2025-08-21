@@ -7,19 +7,24 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 // 加载 .env 文件
-if (File.Exists(".env"))
+var envFiles = new[] { ".env", ".env.docker" };
+foreach (var envFile in envFiles)
 {
-    var envLines = File.ReadAllLines(".env");
-    foreach (var line in envLines)
+    if (File.Exists(envFile))
     {
-        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
-            continue;
-
-        var parts = line.Split('=', 2);
-        if (parts.Length == 2)
+        var envLines = File.ReadAllLines(envFile);
+        foreach (var line in envLines)
         {
-            Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+                continue;
+
+            var parts = line.Split('=', 2);
+            if (parts.Length == 2)
+            {
+                Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+            }
         }
+        break; // 只加载第一个找到的文件
     }
 }
 
