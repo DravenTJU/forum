@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  database:
+    image: mysql:8.0
+    container_name: forum-database
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-1105}
+      MYSQL_DATABASE: ${DB_DATABASE:-forum}
+      MYSQL_USER: ${DB_USERNAME:-forumuser}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-1105}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - forum-network
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # 后端 API
+  api:
+    build:
+      context: ./Forum.Api
+      dockerfile: Dockerfile
+    container_name: forum-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DB_SERVER=database
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-forum}
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-1105}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-32-chars}
+      - JWT_EXPIRATION_MINUTES=${JWT_EXPIRATION_MINUTES:-60}
+      - JWT_REFRESH_EXPIRATION_DAYS=${JWT_REFRESH_EXPIRATION_DAYS:-7}
+      - JWT_ISSUER=${JWT_ISSUER:-ForumApi}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-ForumClient}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+    ports:
+      - "${API_PORT:-4000}:80"
+    depends_on:
+      - database
+    networks:
+      - forum-network
+    restart: unless-stopped
+    volumes:
+      - api_logs:/app/logs
+
+  # 前端应用
+  frontend:
+    build:
+      context: ./forum-frontend
+      dockerfile: Dockerfile
+    container_name: forum-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - api
+    networks:
+      - forum-network
+    restart: unless-stopped
+
+  # Redis (可选，用于缓存和会话)
+  redis:
+    image: redis:7-alpine
+    container_name: forum-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - forum-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+networks:
+  forum-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  api_logs:
+    driver: local
