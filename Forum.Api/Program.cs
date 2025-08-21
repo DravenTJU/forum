@@ -6,6 +6,66 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 加载 .env 文件
+if (File.Exists(".env"))
+{
+    var envLines = File.ReadAllLines(".env");
+    foreach (var line in envLines)
+    {
+        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+            continue;
+
+        var parts = line.Split('=', 2);
+        if (parts.Length == 2)
+        {
+            Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+        }
+    }
+}
+
+// 构建连接字符串
+var dbServer = Environment.GetEnvironmentVariable("DB_SERVER") ?? "127.0.0.1";
+var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "3306";
+var dbDatabase = Environment.GetEnvironmentVariable("DB_DATABASE") ?? "forum";
+var dbUsername = Environment.GetEnvironmentVariable("DB_USERNAME") ?? "root";
+var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "1105";
+var dbCharset = Environment.GetEnvironmentVariable("DB_CHARSET") ?? "utf8mb4";
+var dbSslMode = Environment.GetEnvironmentVariable(builder.Environment.IsDevelopment() ? "DEV_DB_SSL_MODE" : "DB_SSL_MODE") ?? 
+                (builder.Environment.IsDevelopment() ? "None" : "Preferred");
+var dbAllowPublicKey = Environment.GetEnvironmentVariable("DB_ALLOW_PUBLIC_KEY_RETRIEVAL") ?? "true";
+
+var connectionString = $"Server={dbServer};Port={dbPort};Database={dbDatabase};Uid={dbUsername};Pwd={dbPassword};CharSet={dbCharset};SslMode={dbSslMode};AllowPublicKeyRetrieval={dbAllowPublicKey};";
+
+// 设置配置值
+builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
+builder.Configuration["JwtSettings:Secret"] = Environment.GetEnvironmentVariable(builder.Environment.IsDevelopment() ? "DEV_JWT_SECRET" : "JWT_SECRET") ?? "default-secret-key-32-chars-minimum";
+builder.Configuration["JwtSettings:ExpirationInMinutes"] = Environment.GetEnvironmentVariable("JWT_EXPIRATION_MINUTES") ?? "60";
+builder.Configuration["JwtSettings:RefreshExpirationInDays"] = Environment.GetEnvironmentVariable("JWT_REFRESH_EXPIRATION_DAYS") ?? "7";
+builder.Configuration["JwtSettings:Issuer"] = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "ForumApi";
+builder.Configuration["JwtSettings:Audience"] = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "ForumClient";
+
+// 邮件设置
+builder.Configuration["EmailSettings:SmtpHost"] = Environment.GetEnvironmentVariable("SMTP_HOST") ?? "smtp.gmail.com";
+builder.Configuration["EmailSettings:SmtpPort"] = Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587";
+builder.Configuration["EmailSettings:SmtpUsername"] = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? "";
+builder.Configuration["EmailSettings:SmtpPassword"] = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? "";
+builder.Configuration["EmailSettings:FromEmail"] = Environment.GetEnvironmentVariable("FROM_EMAIL") ?? "noreply@forum.com";
+builder.Configuration["EmailSettings:FromName"] = Environment.GetEnvironmentVariable("FROM_NAME") ?? "Forum System";
+
+// CORS 设置
+var corsOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+if (!string.IsNullOrEmpty(corsOrigins))
+{
+    var origins = corsOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(o => o.Trim())
+                            .ToArray();
+    builder.Configuration["CorsSettings:AllowedOrigins:0"] = origins.Length > 0 ? origins[0] : "http://localhost:5173";
+    for (int i = 1; i < origins.Length; i++)
+    {
+        builder.Configuration[$"CorsSettings:AllowedOrigins:{i}"] = origins[i];
+    }
+}
+
 // Serilog 配置
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
