@@ -41,9 +41,21 @@ public class ApiResponse<T>
     }
 }
 
-public class ApiResponse : ApiResponse<object>
+public class ApiResponse
 {
-    public static ApiResponse Success(object? data = null, ApiMeta? meta = null)
+    [JsonPropertyName("success")]
+    public bool Success { get; set; }
+    
+    [JsonPropertyName("data")]
+    public object? Data { get; set; }
+    
+    [JsonPropertyName("error")]
+    public ApiError? Error { get; set; }
+    
+    [JsonPropertyName("meta")]
+    public ApiMeta? Meta { get; set; }
+
+    public static ApiResponse SuccessResult(object? data = null, ApiMeta? meta = null)
     {
         return new ApiResponse
         {
@@ -53,7 +65,7 @@ public class ApiResponse : ApiResponse<object>
         };
     }
 
-    public static ApiResponse Error(string code, string message, Dictionary<string, string[]>? details = null)
+    public static ApiResponse ErrorResult(string code, string message, Dictionary<string, string[]>? details = null)
     {
         return new ApiResponse
         {
