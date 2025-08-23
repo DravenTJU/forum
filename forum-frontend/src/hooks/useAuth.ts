@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '@/api/auth';
 import { toast } from 'sonner';
+import { extractErrorMessage } from '@/lib/error-utils';
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -28,7 +29,7 @@ export function useAuth() {
       toast.success('登录成功');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || '登录失败');
+      toast.error(extractErrorMessage(error, '登录失败'));
     },
   });
 
@@ -41,7 +42,7 @@ export function useAuth() {
       toast.success('注册成功');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || '注册失败');
+      toast.error(extractErrorMessage(error, '注册失败'));
     },
   });
 
@@ -68,7 +69,7 @@ export function useAuth() {
       toast.success('验证邮件已发送');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || '发送失败');
+      toast.error(extractErrorMessage(error, '发送失败'));
     },
   });
 
