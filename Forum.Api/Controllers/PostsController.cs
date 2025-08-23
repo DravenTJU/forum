@@ -1,85 +1,230 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Forum.Api.Services;
-using Forum.Api.Models.Entities;
+using Forum.Api.Models.DTOs;
 
 namespace Forum.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
 public class PostsController : ControllerBase
 {
     private readonly IPostService _postService;
+    private readonly ITopicService _topicService;
     private readonly ILogger<PostsController> _logger;
 
-    public PostsController(IPostService postService, ILogger<PostsController> logger)
+    public PostsController(IPostService postService, ITopicService topicService, ILogger<PostsController> logger)
     {
         _postService = postService;
+        _topicService = topicService;
         _logger = logger;
     }
 
-    [HttpGet("topic/{topicId}")]
-    public async Task<IActionResult> GetByTopic(long topicId, [FromQuery] int limit = 20, [FromQuery] long? cursorId = null, [FromQuery] DateTime? cursorCreated = null)
-    {
-        var posts = await _postService.GetByTopicIdAsync(topicId, limit, cursorId, cursorCreated);
-        return Ok(posts);
-    }
-
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(long id)
-    {
-        var post = await _postService.GetByIdAsync(id);
-        if (post == null)
-        {
-            return NotFound();
-        }
-        return Ok(post);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreatePostRequest request)
-    {
-        var postId = await _postService.CreateAsync(request.TopicId, request.AuthorId, request.ContentMd, request.ReplyToPostId);
-        return CreatedAtAction(nameof(GetById), new { id = postId }, new { id = postId });
-    }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(long id, [FromBody] UpdatePostRequest request)
+    [HttpGet("api/v1/topics/{topicId}/posts")]
+    public async Task<IActionResult> GetPostsByTopic(string topicId, [FromQuery] PostListQuery query)
     {
         try
         {
-            await _postService.UpdateAsync(id, request.ContentMd);
-            return NoContent();
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(x => x.Value?.Errors.Count > 0)
+                    .ToDictionary(
+                        x => x.Key,
+                        x => x.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                    );
+                
+                return BadRequest(ApiResponse.Error("VALIDATION_FAILED", "请求参数验证失败", errors));
+            }
+
+            // 验证主题是否存在
+            var topicExists = await _topicService.TopicExistsAsync(topicId);
+            if (!topicExists)
+            {
+                return NotFound(ApiResponse.Error("TOPIC_NOT_FOUND", "主题不存在"));
+            }
+
+            var (posts, hasNext, nextCursor) = await _postService.GetPostsByTopicAsync(
+                topicId,
+                query.Cursor,
+                query.Limit
+            );
+
+            var meta = new ApiMeta
+            {
+                HasNext = hasNext,
+                NextCursor = nextCursor
+            };
+
+            return Ok(ApiResponse<PostDto[]>.SuccessResult(posts, meta));
         }
-        catch (KeyNotFoundException)
+        catch (Exception ex)
         {
-            return NotFound();
+            _logger.LogError(ex, "Failed to get posts for topic {TopicId}", topicId);
+            return StatusCode(500, ApiResponse.Error("INTERNAL_ERROR", "获取帖子列表失败"));
         }
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(long id)
+    [HttpPost("api/v1/topics/{topicId}/posts")]
+    [Authorize]
+    public async Task<IActionResult> CreatePost(string topicId, [FromBody] CreatePostRequest request)
     {
         try
         {
-            await _postService.DeleteAsync(id);
-            return NoContent();
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(x => x.Value?.Errors.Count > 0)
+                    .ToDictionary(
+                        x => x.Key,
+                        x => x.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                    );
+                
+                return BadRequest(ApiResponse.Error("VALIDATION_FAILED", "请求参数验证失败", errors));
+            }
+
+            var userId = User.FindFirst("sub")?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse.Error("INVALID_TOKEN", "无效的访问令牌"));
+            }
+
+            // 验证主题是否存在且未被锁定
+            var topic = await _topicService.GetTopicByIdAsync(topicId);
+            if (topic == null)
+            {
+                return NotFound(ApiResponse.Error("TOPIC_NOT_FOUND", "主题不存在"));
+            }
+
+            if (topic.IsLocked)
+            {
+                return BadRequest(ApiResponse.Error("TOPIC_LOCKED", "主题已被锁定，无法回帖"));
+            }
+
+            var post = await _postService.CreatePostAsync(
+                topicId,
+                userId,
+                request.ContentMd,
+                request.ReplyToPostId
+            );
+
+            return CreatedAtAction(
+                nameof(GetPostById),
+                new { id = post.Id },
+                ApiResponse<PostDto>.SuccessResult(post)
+            );
         }
-        catch (KeyNotFoundException)
+        catch (ArgumentException ex)
         {
-            return NotFound();
+            return BadRequest(ApiResponse.Error("CREATE_POST_FAILED", ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create post in topic {TopicId}", topicId);
+            return StatusCode(500, ApiResponse.Error("INTERNAL_ERROR", "创建帖子失败"));
         }
     }
-}
 
-public class CreatePostRequest
-{
-    public long TopicId { get; set; }
-    public long AuthorId { get; set; }
-    public string ContentMd { get; set; } = string.Empty;
-    public long? ReplyToPostId { get; set; }
-}
+    [HttpGet("api/v1/posts/{id}")]
+    public async Task<IActionResult> GetPostById(string id)
+    {
+        try
+        {
+            var post = await _postService.GetPostByIdAsync(id);
+            if (post == null)
+            {
+                return NotFound(ApiResponse.Error("POST_NOT_FOUND", "帖子不存在"));
+            }
 
-public class UpdatePostRequest
-{
-    public string ContentMd { get; set; } = string.Empty;
+            return Ok(ApiResponse<PostDto>.SuccessResult(post));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get post {PostId}", id);
+            return StatusCode(500, ApiResponse.Error("INTERNAL_ERROR", "获取帖子详情失败"));
+        }
+    }
+
+    [HttpPatch("api/v1/posts/{id}")]
+    [Authorize]
+    public async Task<IActionResult> UpdatePost(string id, [FromBody] UpdatePostRequest request)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(x => x.Value?.Errors.Count > 0)
+                    .ToDictionary(
+                        x => x.Key,
+                        x => x.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                    );
+                
+                return BadRequest(ApiResponse.Error("VALIDATION_FAILED", "请求参数验证失败", errors));
+            }
+
+            var userId = User.FindFirst("sub")?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse.Error("INVALID_TOKEN", "无效的访问令牌"));
+            }
+
+            var success = await _postService.UpdatePostAsync(
+                id,
+                userId,
+                request.ContentMd,
+                request.UpdatedAt
+            );
+
+            if (!success)
+            {
+                return NotFound(ApiResponse.Error("POST_NOT_FOUND", "帖子不存在或无权限修改"));
+            }
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("conflict"))
+        {
+            return Conflict(ApiResponse.Error("CONFLICT", "数据已被其他用户修改，请刷新后重试"));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid(ApiResponse.Error("INSUFFICIENT_PERMISSIONS", "权限不足"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update post {PostId}", id);
+            return StatusCode(500, ApiResponse.Error("INTERNAL_ERROR", "更新帖子失败"));
+        }
+    }
+
+    [HttpDelete("api/v1/posts/{id}")]
+    [Authorize]
+    public async Task<IActionResult> DeletePost(string id)
+    {
+        try
+        {
+            var userId = User.FindFirst("sub")?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse.Error("INVALID_TOKEN", "无效的访问令牌"));
+            }
+
+            var success = await _postService.DeletePostAsync(id, userId);
+            if (!success)
+            {
+                return NotFound(ApiResponse.Error("POST_NOT_FOUND", "帖子不存在或无权限删除"));
+            }
+
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid(ApiResponse.Error("INSUFFICIENT_PERMISSIONS", "权限不足"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete post {PostId}", id);
+            return StatusCode(500, ApiResponse.Error("INTERNAL_ERROR", "删除帖子失败"));
+        }
+    }
 }
