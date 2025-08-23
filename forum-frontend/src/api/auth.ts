@@ -107,30 +107,31 @@ api.interceptors.response.use(
   }
 );
 
+// 由于响应拦截器会将 ApiResponse<T> 转换为 T，所以这里的返回类型应该是解包后的类型
 export const authApi = {
   register: (data: RegisterRequest) => 
-    api.post<ApiResponse<AuthResponse>>('/auth/register', data),
+    api.post<AuthResponse>('/auth/register', data),
     
   login: (data: LoginRequest) => 
-    api.post<ApiResponse<AuthResponse>>('/auth/login', data),
+    api.post<AuthResponse>('/auth/login', data),
     
   logout: () => 
-    api.post<ApiResponse<{ message: string }>>('/auth/logout'),
+    api.post<{ message: string }>('/auth/logout'),
     
   getCurrentUser: () => 
-    api.get<ApiResponse<User>>('/auth/me'),
+    api.get<User>('/auth/me'),
     
   sendEmailVerification: (email: string) => 
-    api.post<ApiResponse<{ message: string }>>('/auth/verify-request', { token: email }),
+    api.post<{ message: string }>('/auth/verify-request', { token: email }),
     
   verifyEmail: (data: VerifyEmailRequest) => 
-    api.post<ApiResponse<{ message: string }>>('/auth/verify', data),
+    api.post<{ message: string }>('/auth/verify', data),
     
   forgotPassword: (data: ForgotPasswordRequest) => 
-    api.post<ApiResponse<{ message: string }>>('/auth/forgot', data),
+    api.post<{ message: string }>('/auth/forgot', data),
     
   resetPassword: (data: ResetPasswordRequest) => 
-    api.post<ApiResponse<{ message: string }>>('/auth/reset', data),
+    api.post<{ message: string }>('/auth/reset', data),
 };
 
 // 导出 CSRF Token 相关功能供其他模块使用
