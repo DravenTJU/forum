@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '@/api/auth';
-import { toast } from 'sonner';
-import { extractErrorMessage } from '@/lib/error-utils';
+import { notify, Messages } from '@/lib/notification';
+import { getSmartErrorMessage } from '@/lib/error-utils';
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -25,11 +25,12 @@ export function useAuth() {
     mutationFn: authApi.login,
     onSuccess: (response) => {
       // Cookie-based 认证，不需要手动存储 token
+      // 响应拦截器已经解包了 ApiResponse，所以 response.data 就是 AuthResponse
       queryClient.setQueryData(['auth', 'user'], response.data.user);
-      toast.success('登录成功');
+      notify.success(Messages.LOGIN_SUCCESS);
     },
     onError: (error: any) => {
-      toast.error(extractErrorMessage(error, '登录失败'));
+      notify.error(getSmartErrorMessage(error, Messages.LOGIN_FAILED));
     },
   });
 
@@ -39,10 +40,10 @@ export function useAuth() {
     onSuccess: (response) => {
       // Cookie-based 认证，不需要手动存储 token
       queryClient.setQueryData(['auth', 'user'], response.data.user);
-      toast.success('注册成功');
+      notify.success(Messages.REGISTER_SUCCESS);
     },
     onError: (error: any) => {
-      toast.error(extractErrorMessage(error, '注册失败'));
+      notify.error(getSmartErrorMessage(error, Messages.REGISTER_FAILED));
     },
   });
 
@@ -53,7 +54,7 @@ export function useAuth() {
       // Cookie-based 认证，服务端会清除 Cookie
       queryClient.setQueryData(['auth', 'user'], null);
       queryClient.clear();
-      toast.success('已退出登录');
+      notify.success(Messages.LOGOUT_SUCCESS);
     },
     onError: () => {
       // 即使请求失败也清除本地状态
@@ -66,10 +67,10 @@ export function useAuth() {
   const sendVerificationMutation = useMutation({
     mutationFn: (email: string) => authApi.sendEmailVerification(email),
     onSuccess: () => {
-      toast.success('验证邮件已发送');
+      notify.success(Messages.EMAIL_VERIFICATION_SENT);
     },
     onError: (error: any) => {
-      toast.error(extractErrorMessage(error, '发送失败'));
+      notify.error(getSmartErrorMessage(error, '发送失败'));
     },
   });
 

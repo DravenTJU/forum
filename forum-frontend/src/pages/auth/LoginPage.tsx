@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormError } from '@/components/ui/field-error';
 import { useAuth } from '@/hooks/useAuth';
+import { useFormError, createFieldErrorHandler } from '@/hooks/useFormError';
 import type { LoginRequest } from '@/types/auth';
 
 const loginSchema = z.object({
@@ -22,6 +24,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isLoggingIn } = useAuth();
+  const { errorState, clearErrors, setErrorFromResponse } = useFormError();
 
   const from = location.state?.from?.pathname || '/';
 
@@ -33,10 +36,19 @@ export function LoginPage() {
     },
   });
 
+  const fieldErrorHandler = createFieldErrorHandler<LoginRequest>(form.setError, form.clearErrors);
+
   const onSubmit = (data: LoginRequest) => {
+    clearErrors(); // 清除之前的错误
+    
     login(data, {
       onSuccess: () => {
         navigate(from, { replace: true });
+      },
+      onError: (error: any) => {
+        // 设置表单错误或字段错误
+        setErrorFromResponse(error, '登录失败');
+        fieldErrorHandler.setFieldErrorsFromResponse(error);
       },
     });
   };
@@ -53,6 +65,11 @@ export function LoginPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* 显示表单级错误 */}
+              <FormError 
+                error={errorState.message}
+                errors={errorState.fieldErrors}
+              />
               <FormField
                 control={form.control}
                 name="email"
