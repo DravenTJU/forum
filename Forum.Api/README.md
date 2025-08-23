@@ -119,7 +119,7 @@ dotnet build --verbosity normal
 
 ## 📚 相关文档
 
-- [M0 项目脚手架](doc/milestone-m0-scaffolding.md)
-- [M1 用户认证系统](doc/milestone-m1-authentication.md)
-- [编码规范](doc/coding_standards_and_principles.md)
-- [产品需求文档](doc/prd-discourse-style-forum.md)
+- [M0 项目脚手架](../doc/milestone-m0-scaffolding.md)
+- [M1 用户认证系统](../doc/milestone-m1-authentication.md)
+- [编码规范](../doc/coding_standards_and_principles.md)
+- [产品需求文档](../doc/prd-discourse-style-forum.md)
