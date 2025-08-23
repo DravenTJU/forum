@@ -23,7 +23,7 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (response) => {
-      localStorage.setItem('accessToken', response.data.accessToken);
+      // Cookie-based 认证，不需要手动存储 token
       queryClient.setQueryData(['auth', 'user'], response.data.user);
       toast.success('登录成功');
     },
@@ -36,7 +36,7 @@ export function useAuth() {
   const registerMutation = useMutation({
     mutationFn: authApi.register,
     onSuccess: (response) => {
-      localStorage.setItem('accessToken', response.data.accessToken);
+      // Cookie-based 认证，不需要手动存储 token
       queryClient.setQueryData(['auth', 'user'], response.data.user);
       toast.success('注册成功');
     },
@@ -49,14 +49,13 @@ export function useAuth() {
   const logoutMutation = useMutation({
     mutationFn: authApi.logout,
     onSuccess: () => {
-      localStorage.removeItem('accessToken');
+      // Cookie-based 认证，服务端会清除 Cookie
       queryClient.setQueryData(['auth', 'user'], null);
       queryClient.clear();
       toast.success('已退出登录');
     },
     onError: () => {
       // 即使请求失败也清除本地状态
-      localStorage.removeItem('accessToken');
       queryClient.setQueryData(['auth', 'user'], null);
       queryClient.clear();
     },
