@@ -125,4 +125,28 @@ public class AuthController : ControllerBase
             return StatusCode(500, ApiResponse.ErrorResult("INTERNAL_ERROR", "获取CSRF令牌失败"));
         }
     }
+
+    [HttpGet("test-auth")]
+    [Authorize]
+    public IActionResult TestAuth()
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToArray();
+            
+            return Ok(ApiResponse.SuccessResult(new 
+            { 
+                userId, 
+                username, 
+                claims 
+            }));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Test auth failed");
+            return StatusCode(500, ApiResponse.ErrorResult("INTERNAL_ERROR", "测试认证失败"));
+        }
+    }
 }

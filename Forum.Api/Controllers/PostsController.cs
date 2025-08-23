@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Forum.Api.Services;
 using Forum.Api.Models.DTOs;
+using System.Security.Claims;
 
 namespace Forum.Api.Controllers;
 
@@ -110,7 +111,7 @@ public class PostsController : ControllerBase
                 return BadRequest(ApiResponse.ErrorResult("VALIDATION_FAILED", "请求参数验证失败", errors));
             }
 
-            var userId = User.FindFirst("sub")?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(ApiResponse.ErrorResult("INVALID_TOKEN", "无效的访问令牌"));
@@ -253,7 +254,7 @@ public class PostsController : ControllerBase
                 return BadRequest(ApiResponse.ErrorResult("VALIDATION_FAILED", "请求参数验证失败", errors));
             }
 
-            var userId = User.FindFirst("sub")?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(ApiResponse.ErrorResult("INVALID_TOKEN", "无效的访问令牌"));
@@ -295,7 +296,7 @@ public class PostsController : ControllerBase
     {
         try
         {
-            var userId = User.FindFirst("sub")?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(ApiResponse.ErrorResult("INVALID_TOKEN", "无效的访问令牌"));

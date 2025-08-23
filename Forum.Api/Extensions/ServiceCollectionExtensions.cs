@@ -62,6 +62,19 @@ public static class ServiceCollectionExtensions
                         }
                         
                         return Task.CompletedTask;
+                    },
+                    OnTokenValidated = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                        logger.LogInformation("JWT token validated successfully for user: {UserId}", 
+                            context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                        logger.LogWarning("JWT authentication failed: {Exception}", context.Exception.Message);
+                        return Task.CompletedTask;
                     }
                 };
             });
