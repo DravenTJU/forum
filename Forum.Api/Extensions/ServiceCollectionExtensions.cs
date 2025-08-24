@@ -5,6 +5,7 @@ using Forum.Api.Services;
 using Forum.Api.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 namespace Forum.Api.Extensions;
