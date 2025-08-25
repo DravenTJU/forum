@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using Forum.Api.Services;
 using Forum.Api.Models.DTOs;
 
@@ -160,7 +161,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
             {
                 return Unauthorized(ApiResponse.ErrorResult("INVALID_TOKEN", "无效的认证令牌"));
@@ -175,7 +176,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Get current user failed for userId {UserId}", User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            _logger.LogError(ex, "Get current user failed for userId {UserId}", User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value);
             return StatusCode(500, ApiResponse.ErrorResult("INTERNAL_ERROR", "获取用户信息失败"));
         }
     }
@@ -186,7 +187,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             var username = User.FindFirst(ClaimTypes.Name)?.Value;
             var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToArray();
             
