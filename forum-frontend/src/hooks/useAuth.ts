@@ -99,9 +99,16 @@ export function useAuth() {
     registerError: registerMutation.error,
     // 错误处理辅助函数
     getRegisterFieldErrors: () => getUnifiedFieldErrors(registerMutation.error),
-    getRegisterErrorMessage: () => registerMutation.error 
-      ? getSmartErrorMessage(registerMutation.error, Messages.REGISTER_FAILED)
-      : '',
+    getRegisterErrorMessage: () => {
+      const fieldErrors = getUnifiedFieldErrors(registerMutation.error);
+      // 如果有字段级错误，就不显示通用错误消息，避免重复
+      if (Object.keys(fieldErrors).length > 0) {
+        return '';
+      }
+      return registerMutation.error 
+        ? getSmartErrorMessage(registerMutation.error, Messages.REGISTER_FAILED)
+        : '';
+    },
     clearErrors: () => {
       loginMutation.reset();
       registerMutation.reset();
