@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '@/api/auth';
 import { notify, Messages } from '@/lib/notification';
-import { getSmartErrorMessage } from '@/lib/error-utils';
+import { getSmartErrorMessage, getUnifiedFieldErrors } from '@/lib/error-utils';
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -20,7 +20,7 @@ export function useAuth() {
       try {
         const response = await authApi.getCurrentUser();
         return response.data;
-      } catch (error) {
+      } catch {
         // 401 错误不需要额外处理，响应拦截器已经处理
         return null;
       }
@@ -94,5 +94,17 @@ export function useAuth() {
     sendVerification: sendVerificationMutation.mutate,
     isLoggingIn: loginMutation.isPending,
     isRegistering: registerMutation.isPending,
+    // 错误状态
+    loginError: loginMutation.error,
+    registerError: registerMutation.error,
+    // 错误处理辅助函数
+    getRegisterFieldErrors: () => getUnifiedFieldErrors(registerMutation.error),
+    getRegisterErrorMessage: () => registerMutation.error 
+      ? getSmartErrorMessage(registerMutation.error, Messages.REGISTER_FAILED)
+      : '',
+    clearErrors: () => {
+      loginMutation.reset();
+      registerMutation.reset();
+    },
   };
 }
