@@ -6,7 +6,14 @@ import { getSmartErrorMessage } from '@/lib/error-utils';
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  // 获取当前用户 - 仅在可能有有效session时查询
+  // 检查当前路径是否需要认证状态
+  const shouldFetchUser = () => {
+    const currentPath = window.location.pathname;
+    // 在登录和注册页面不需要获取用户信息
+    return !['/login', '/register'].includes(currentPath);
+  };
+
+  // 获取当前用户 - 仅在非登录页面查询
   const { data: user, isLoading: isLoadingUser } = useQuery({
     queryKey: ['auth', 'user'],
     queryFn: async () => {
@@ -18,6 +25,7 @@ export function useAuth() {
         return null;
       }
     },
+    enabled: shouldFetchUser(), // 只在需要时查询
     staleTime: 5 * 60 * 1000, // 5分钟
     retry: false, // 不重试，避免重复401请求
     refetchOnWindowFocus: false, // 防止页面焦点变化时重新获取
@@ -26,10 +34,10 @@ export function useAuth() {
   // 登录
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (response) => {
-      // Cookie-based 认证，不需要手动存储 token
-      // 响应拦截器已经解包了 ApiResponse，所以 response.data 就是 AuthResponse
-      queryClient.setQueryData(['auth', 'user'], response.data.user);
+    onSuccess: () => {
+      // JWT Token存储在HttpOnly Cookie中，符合API规范
+      // 登录成功后刷新用户信息
+      queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
       notify.success(Messages.LOGIN_SUCCESS);
     },
     onError: (error: any) => {
@@ -40,9 +48,8 @@ export function useAuth() {
   // 注册
   const registerMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (response) => {
-      // Cookie-based 认证，不需要手动存储 token
-      queryClient.setQueryData(['auth', 'user'], response.data.user);
+    onSuccess: () => {
+      // 注册成功，等待用户验证邮箱后登录
       notify.success(Messages.REGISTER_SUCCESS);
     },
     onError: (error: any) => {
