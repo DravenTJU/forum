@@ -163,6 +163,34 @@ public class AuthService : IAuthService
         };
     }
 
+    public async Task<UserDto> GetCurrentUserAsync(long userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException("User not found");
+        }
+
+        if (user.Status == UserStatus.Suspended)
+        {
+            throw new UnauthorizedAccessException("Account is suspended");
+        }
+
+        return new UserDto
+        {
+            Id = user.Id.ToString(),
+            Username = user.Username,
+            Email = user.Email,
+            EmailVerified = user.EmailVerified,
+            AvatarUrl = user.AvatarUrl,
+            Bio = user.Bio,
+            Status = user.Status.ToString().ToLowerInvariant(),
+            Roles = new[] { UserRole.User.ToString().ToLowerInvariant() },
+            LastSeenAt = user.LastSeenAt,
+            CreatedAt = user.CreatedAt
+        };
+    }
+
     private static byte[] HashRefreshToken(string refreshToken)
     {
         using var sha256 = SHA256.Create();
