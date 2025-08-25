@@ -71,7 +71,32 @@ public class AuthController : ControllerBase
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             
             var loginResponse = await _authService.LoginAsync(request.Email, request.Password, userAgent, ipAddress);
-            return Ok(ApiResponse<LoginResponse>.SuccessResult(loginResponse));
+            
+            // 设置JWT Token到HttpOnly Cookie (符合API规范)
+            var isDevelopment = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = Request.IsHttps && !isDevelopment, // 开发环境允许HTTP
+                SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.Strict, // 开发环境使用Lax
+                Expires = DateTimeOffset.UtcNow.AddSeconds(loginResponse.ExpiresIn),
+                Path = "/"
+            };
+            Response.Cookies.Append("auth-token", loginResponse.AccessToken, cookieOptions);
+            
+            // 刷新令牌存储在单独的HttpOnly Cookie
+            var refreshCookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = Request.IsHttps && !isDevelopment,
+                SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddDays(7),
+                Path = "/"
+            };
+            Response.Cookies.Append("refresh-token", loginResponse.RefreshToken, refreshCookieOptions);
+
+            // 返回成功响应（不包含敏感token信息）
+            return Ok(ApiResponse.SuccessResult(new { message = "登录成功" }));
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -110,12 +135,14 @@ public class AuthController : ControllerBase
             var token = Guid.NewGuid().ToString("N");
             
             // 设置CSRF Token到Cookie
+            var isDevelopment = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
             Response.Cookies.Append("csrf-token", token, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = Request.IsHttps,
-                SameSite = SameSiteMode.Strict,
-                MaxAge = TimeSpan.FromHours(24)
+                Secure = Request.IsHttps && !isDevelopment,
+                SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.Strict,
+                MaxAge = TimeSpan.FromHours(24),
+                Path = "/"
             });
 
             return Ok(ApiResponse.SuccessResult(new { csrfToken = token }));
