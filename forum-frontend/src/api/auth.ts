@@ -82,9 +82,15 @@ api.interceptors.response.use(
   },
   async (error) => {
     if (error.response?.status === 401) {
-      // 401 错误时清除 CSRF Token 并重定向到登录页
+      // 401 错误时清除 CSRF Token
       csrfToken = null;
-      window.location.href = '/login';
+      
+      // 只有在不在登录/注册页面时才重定向，防止无限循环
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/login' && currentPath !== '/register') {
+        window.location.href = '/login';
+      }
+      
       return Promise.reject(error);
     }
     
