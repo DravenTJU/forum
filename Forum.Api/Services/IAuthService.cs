@@ -8,4 +8,5 @@ public interface IAuthService
     Task<long> RegisterAsync(string username, string email, string password);
     Task<bool> ValidateTokenAsync(string token);
     Task<LoginResponse> RefreshTokenAsync(string refreshToken);
+    Task<UserDto> GetCurrentUserAsync(long userId);
 }
