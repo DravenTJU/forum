@@ -127,6 +127,32 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(ApiResponse.ErrorResult("INVALID_TOKEN", "无效的认证令牌"));
+            }
+
+            var user = await _authService.GetCurrentUserAsync(userId);
+            return Ok(ApiResponse<UserDto>.SuccessResult(user));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ApiResponse.ErrorResult("UNAUTHORIZED", ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Get current user failed for userId {UserId}", User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            return StatusCode(500, ApiResponse.ErrorResult("INTERNAL_ERROR", "获取用户信息失败"));
+        }
+    }
+
     [HttpGet("test-auth")]
     [Authorize]
     public IActionResult TestAuth()
