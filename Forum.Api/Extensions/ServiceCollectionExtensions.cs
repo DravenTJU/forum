@@ -6,6 +6,7 @@ using Forum.Api.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
 namespace Forum.Api.Extensions;
@@ -77,7 +78,7 @@ public static class ServiceCollectionExtensions
                     {
                         var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
                         logger.LogInformation("JWT token validated successfully for user: {UserId}", 
-                            context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+                            context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value);
                         return Task.CompletedTask;
                     },
                     OnAuthenticationFailed = context =>
