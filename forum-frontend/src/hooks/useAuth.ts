@@ -6,7 +6,7 @@ import { getSmartErrorMessage } from '@/lib/error-utils';
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  // 获取当前用户
+  // 获取当前用户 - 仅在可能有有效session时查询
   const { data: user, isLoading: isLoadingUser } = useQuery({
     queryKey: ['auth', 'user'],
     queryFn: async () => {
@@ -14,10 +14,13 @@ export function useAuth() {
         const response = await authApi.getCurrentUser();
         return response.data;
       } catch (error) {
+        // 401 错误不需要额外处理，响应拦截器已经处理
         return null;
       }
     },
     staleTime: 5 * 60 * 1000, // 5分钟
+    retry: false, // 不重试，避免重复401请求
+    refetchOnWindowFocus: false, // 防止页面焦点变化时重新获取
   });
 
   // 登录
