@@ -17,8 +17,7 @@ export interface UserProfile extends User {
 }
 
 export interface AuthResponse {
-  user: User;
-  csrfToken: string; // 根据 API 规范，登录响应包含 CSRF Token
+  message: string; // 登录成功消息，token存储在HttpOnly Cookie中
 }
 
 export interface LoginRequest {
