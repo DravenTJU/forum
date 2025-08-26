@@ -140,5 +140,5 @@ export const authApi = {
     api.post<{ message: string }>('/auth/reset', data),
 };
 
-// 导出 CSRF Token 相关功能供其他模块使用
-export { getCsrfToken };
+// 导出 API 实例和 CSRF Token 相关功能供其他模块使用
+export { api, getCsrfToken };
