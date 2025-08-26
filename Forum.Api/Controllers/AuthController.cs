@@ -96,8 +96,38 @@ public class AuthController : ControllerBase
             };
             Response.Cookies.Append("refresh-token", loginResponse.RefreshToken, refreshCookieOptions);
 
-            // 返回成功响应（不包含敏感token信息）
-            return Ok(ApiResponse.SuccessResult(new { message = "登录成功" }));
+            // 从JWT Token中解析用户ID
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jsonToken = tokenHandler.ReadJwtToken(loginResponse.AccessToken);
+            var userIdClaim = jsonToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out var userId))
+            {
+                return StatusCode(500, ApiResponse.ErrorResult("INTERNAL_ERROR", "无法解析用户信息"));
+            }
+            
+            // 获取用户信息用于响应
+            var currentUser = await _authService.GetCurrentUserAsync(userId);
+            
+            // 生成CSRF令牌
+            var csrfToken = Guid.NewGuid().ToString("N");
+            
+            // 设置CSRF Token到Cookie
+            var csrfCookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = Request.IsHttps && !isDevelopment,
+                SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.Strict,
+                MaxAge = TimeSpan.FromHours(24),
+                Path = "/"
+            };
+            Response.Cookies.Append("csrf-token", csrfToken, csrfCookieOptions);
+
+            // 返回符合API规范的成功响应
+            return Ok(ApiResponse.SuccessResult(new 
+            { 
+                user = currentUser,
+                csrfToken = csrfToken
+            }));
         }
         catch (UnauthorizedAccessException ex)
         {
