@@ -26,4 +26,14 @@ public class TagService : ITagService
     {
         return await _tagRepository.GetBySlugAsync(slug);
     }
+
+    public async Task<IEnumerable<Tag>> GetByTopicIdAsync(long topicId)
+    {
+        return await _tagRepository.GetByTopicIdAsync(topicId);
+    }
+
+    public async Task<Dictionary<long, IEnumerable<Tag>>> GetByTopicIdsAsync(IEnumerable<long> topicIds)
+    {
+        return await _tagRepository.GetByTopicIdsAsync(topicIds);
+    }
 }
