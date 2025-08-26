@@ -25,7 +25,7 @@ public class JwtTokenService : IJwtTokenService
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new(ClaimTypes.Name, username),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)

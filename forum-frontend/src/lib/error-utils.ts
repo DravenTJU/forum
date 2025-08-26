@@ -27,11 +27,67 @@ export function extractErrorMessage(error: any, defaultMessage: string): string 
 }
 
 /**
+ * 从ASP.NET Core标准错误格式中提取错误消息
+ */
+export function extractAspNetCoreErrorMessage(error: any, defaultMessage: string): string {
+  const errorData = error.response?.data;
+  
+  if (!errorData) {
+    return defaultMessage;
+  }
+  
+  // 处理ASP.NET Core标准格式: { title, errors: { field: [messages] } }
+  if (errorData.errors && typeof errorData.errors === 'object') {
+    const fieldErrors = Object.entries(errorData.errors)
+      .map(([field, messages]) => {
+        const messageArray = Array.isArray(messages) ? messages : [messages];
+        return `${field}: ${messageArray.join(', ')}`;
+      })
+      .join('; ');
+    return fieldErrors || errorData.title || defaultMessage;
+  }
+  
+  // 处理简单错误格式
+  if (errorData.title) {
+    return errorData.title;
+  }
+  
+  return defaultMessage;
+}
+
+/**
  * 获取字段级验证错误，用于表单显示
  */
 export function getFieldErrors(error: any): Record<string, string[]> {
-  const errorData = error.response?.data as ApiError | undefined;
+  if (!error || !error.response) {
+    return {};
+  }
+  
+  const errorData = error.response.data as ApiError | undefined;
   return errorData?.details || {};
+}
+
+/**
+ * 从ASP.NET Core格式中获取字段级验证错误
+ */
+export function getAspNetCoreFieldErrors(error: any): Record<string, string[]> {
+  if (!error || !error.response) {
+    return {};
+  }
+  
+  const errorData = error.response.data;
+  
+  if (!errorData?.errors || typeof errorData.errors !== 'object') {
+    return {};
+  }
+  
+  // 转换ASP.NET Core格式到统一格式
+  const fieldErrors: Record<string, string[]> = {};
+  Object.entries(errorData.errors).forEach(([field, messages]) => {
+    fieldErrors[field] = Array.isArray(messages) ? messages : [messages];
+  });
+  
+  return fieldErrors;
 }
 
 /**
@@ -88,8 +144,28 @@ export function getSmartErrorMessage(error: any, defaultMessage: string): string
     return businessMessage;
   }
   
+  // 尝试ASP.NET Core格式
+  const aspNetCoreMessage = extractAspNetCoreErrorMessage(error, '');
+  if (aspNetCoreMessage && aspNetCoreMessage !== defaultMessage) {
+    return aspNetCoreMessage;
+  }
+  
   // 否则使用原始消息提取
   return extractErrorMessage(error, defaultMessage);
+}
+
+/**
+ * 统一获取字段错误 - 支持多种错误格式
+ */
+export function getUnifiedFieldErrors(error: any): Record<string, string[]> {
+  // 先尝试标准API格式
+  const standardErrors = getFieldErrors(error);
+  if (Object.keys(standardErrors).length > 0) {
+    return standardErrors;
+  }
+  
+  // 再尝试ASP.NET Core格式
+  return getAspNetCoreFieldErrors(error);
 }
 
 /**

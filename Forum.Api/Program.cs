@@ -84,6 +84,10 @@ builder.Host.UseSerilog();
 // 配置 Dapper 类型处理器
 DapperConfiguration.Configure();
 
+// 禁用默认的JWT claim类型映射
+Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.DefaultInboundClaimTypeMap.Clear();
+System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
 // 添加服务
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

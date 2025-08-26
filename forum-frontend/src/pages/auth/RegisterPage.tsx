@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormError } from '@/components/ui/field-error';
 import { useAuth } from '@/hooks/useAuth';
 
 const registerSchema = z.object({
@@ -32,7 +33,13 @@ export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
-  const { register: registerUser, isRegistering } = useAuth();
+  const { 
+    register: registerUser, 
+    isRegistering, 
+    getRegisterFieldErrors, 
+    getRegisterErrorMessage,
+    clearErrors 
+  } = useAuth();
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -45,7 +52,10 @@ export function RegisterPage() {
   });
 
   const onSubmit = (data: RegisterFormData) => {
-    const { confirmPassword, ...registerData } = data;
+    // 清除之前的错误
+    clearErrors();
+    
+    const { confirmPassword: _, ...registerData } = data;
     registerUser(registerData, {
       onSuccess: () => {
         navigate('/', { replace: true });
@@ -65,6 +75,10 @@ export function RegisterPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormError 
+                error={getRegisterErrorMessage()}
+                errors={getRegisterFieldErrors()}
+              />
               <FormField
                 control={form.control}
                 name="username"

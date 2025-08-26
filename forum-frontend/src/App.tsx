@@ -67,8 +67,12 @@ function HomePage() {
 function App() {
   const { isLoadingUser } = useAuth()
   const isDev = import.meta.env.DEV
-
-  if (isLoadingUser) {
+  
+  // 只在需要认证的页面显示加载状态
+  const currentPath = window.location.pathname
+  const isAuthPage = ['/login', '/register'].includes(currentPath)
+  
+  if (isLoadingUser && !isAuthPage) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="large" />

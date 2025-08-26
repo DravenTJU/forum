@@ -1,32 +1,43 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '@/api/auth';
 import { notify, Messages } from '@/lib/notification';
-import { getSmartErrorMessage } from '@/lib/error-utils';
+import { getSmartErrorMessage, getUnifiedFieldErrors } from '@/lib/error-utils';
 
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  // 获取当前用户
+  // 检查当前路径是否需要认证状态
+  const shouldFetchUser = () => {
+    const currentPath = window.location.pathname;
+    // 在登录和注册页面不需要获取用户信息
+    return !['/login', '/register'].includes(currentPath);
+  };
+
+  // 获取当前用户 - 仅在非登录页面查询
   const { data: user, isLoading: isLoadingUser } = useQuery({
     queryKey: ['auth', 'user'],
     queryFn: async () => {
       try {
         const response = await authApi.getCurrentUser();
         return response.data;
-      } catch (error) {
+      } catch {
+        // 401 错误不需要额外处理，响应拦截器已经处理
         return null;
       }
     },
+    enabled: shouldFetchUser(), // 只在需要时查询
     staleTime: 5 * 60 * 1000, // 5分钟
+    retry: false, // 不重试，避免重复401请求
+    refetchOnWindowFocus: false, // 防止页面焦点变化时重新获取
   });
 
   // 登录
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (response) => {
-      // Cookie-based 认证，不需要手动存储 token
-      // 响应拦截器已经解包了 ApiResponse，所以 response.data 就是 AuthResponse
-      queryClient.setQueryData(['auth', 'user'], response.data.user);
+    onSuccess: () => {
+      // JWT Token存储在HttpOnly Cookie中，符合API规范
+      // 登录成功后刷新用户信息
+      queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
       notify.success(Messages.LOGIN_SUCCESS);
     },
     onError: (error: any) => {
@@ -37,9 +48,8 @@ export function useAuth() {
   // 注册
   const registerMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (response) => {
-      // Cookie-based 认证，不需要手动存储 token
-      queryClient.setQueryData(['auth', 'user'], response.data.user);
+    onSuccess: () => {
+      // 注册成功，等待用户验证邮箱后登录
       notify.success(Messages.REGISTER_SUCCESS);
     },
     onError: (error: any) => {
@@ -84,5 +94,24 @@ export function useAuth() {
     sendVerification: sendVerificationMutation.mutate,
     isLoggingIn: loginMutation.isPending,
     isRegistering: registerMutation.isPending,
+    // 错误状态
+    loginError: loginMutation.error,
+    registerError: registerMutation.error,
+    // 错误处理辅助函数
+    getRegisterFieldErrors: () => getUnifiedFieldErrors(registerMutation.error),
+    getRegisterErrorMessage: () => {
+      const fieldErrors = getUnifiedFieldErrors(registerMutation.error);
+      // 如果有字段级错误，就不显示通用错误消息，避免重复
+      if (Object.keys(fieldErrors).length > 0) {
+        return '';
+      }
+      return registerMutation.error 
+        ? getSmartErrorMessage(registerMutation.error, Messages.REGISTER_FAILED)
+        : '';
+    },
+    clearErrors: () => {
+      loginMutation.reset();
+      registerMutation.reset();
+    },
   };
 }

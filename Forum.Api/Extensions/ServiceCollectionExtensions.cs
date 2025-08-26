@@ -5,6 +5,8 @@ using Forum.Api.Services;
 using Forum.Api.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
 namespace Forum.Api.Extensions;
@@ -48,19 +50,41 @@ public static class ServiceCollectionExtensions
                     ClockSkew = TimeSpan.Zero
                 };
 
-                // SignalR 支持
+                // 支持从Cookie获取Token（符合API规范）
                 options.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
                     {
-                        var accessToken = context.Request.Query["access_token"];
-                        var path = context.HttpContext.Request.Path;
-                        
-                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                        // 从Cookie获取JWT token
+                        var token = context.Request.Cookies["auth-token"];
+                        if (!string.IsNullOrEmpty(token))
                         {
-                            context.Token = accessToken;
+                            context.Token = token;
+                        }
+                        else
+                        {
+                            // SignalR 支持：从查询参数获取token
+                            var accessToken = context.Request.Query["access_token"];
+                            var path = context.HttpContext.Request.Path;
+                            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                            {
+                                context.Token = accessToken;
+                            }
                         }
                         
+                        return Task.CompletedTask;
+                    },
+                    OnTokenValidated = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                        logger.LogInformation("JWT token validated successfully for user: {UserId}", 
+                            context.Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value);
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtBearerEvents>>();
+                        logger.LogWarning("JWT authentication failed: {Exception}", context.Exception.Message);
                         return Task.CompletedTask;
                     }
                 };
