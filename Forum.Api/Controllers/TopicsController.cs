@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Forum.Api.Services;
 using Forum.Api.Models.DTOs;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Forum.Api.Controllers;
 
@@ -11,11 +12,22 @@ namespace Forum.Api.Controllers;
 public class TopicsController : ControllerBase
 {
     private readonly ITopicService _topicService;
+    private readonly IUserService _userService;
+    private readonly ICategoryService _categoryService;
+    private readonly ITagService _tagService;
     private readonly ILogger<TopicsController> _logger;
 
-    public TopicsController(ITopicService topicService, ILogger<TopicsController> logger)
+    public TopicsController(
+        ITopicService topicService,
+        IUserService userService, 
+        ICategoryService categoryService,
+        ITagService tagService,
+        ILogger<TopicsController> logger)
     {
         _topicService = topicService;
+        _userService = userService;
+        _categoryService = categoryService;
+        _tagService = tagService;
         _logger = logger;
     }
 
@@ -41,32 +53,107 @@ public class TopicsController : ControllerBase
             var hasNext = topics.Count() >= query.Limit;
             var nextCursor = hasNext ? "next" : null;
 
+            // 获取用户、分类和标签信息
+            var userIds = topics.Select(t => t.AuthorId).Distinct().ToList();
+            var categoryIds = topics.Select(t => t.CategoryId).Distinct().ToList();
+            var topicIds = topics.Select(t => t.Id).ToList();
+            
+            var users = new Dictionary<long, Models.Entities.User>();
+            foreach (var userId in userIds)
+            {
+                try
+                {
+                    var user = await _userService.GetByIdAsync(userId);
+                    if (user != null)
+                    {
+                        users[userId] = user;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get user {UserId}", userId);
+                }
+            }
+            
+            var categories = new Dictionary<long, Models.Entities.Category>();
+            foreach (var catId in categoryIds)
+            {
+                try
+                {
+                    var category = await _categoryService.GetByIdAsync(catId);
+                    if (category != null)
+                    {
+                        categories[catId] = category;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get category {CategoryId}", catId);
+                }
+            }
+            
+            // 获取主题标签信息 - 使用单个查询方式（暂时）
+            var topicTags = new Dictionary<long, IEnumerable<Models.Entities.Tag>>();
+            foreach (var topicId in topicIds)
+            {
+                try
+                {
+                    var tags = await _tagService.GetByTopicIdAsync(topicId);
+                    topicTags[topicId] = tags;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get tags for topic {TopicId}", topicId);
+                    topicTags[topicId] = new List<Models.Entities.Tag>();
+                }
+            }
+
             // 转换为DTO格式
             var topicDtos = topics.Select(t => new TopicDto
             {
                 Id = t.Id.ToString(),
                 Title = t.Title,
                 Slug = t.Slug,
-                Author = new UserSummaryDto
+                Author = users.TryGetValue(t.AuthorId, out var author) ? new UserSummaryDto
+                {
+                    Id = author.Id.ToString(),
+                    Username = author.Username,
+                    AvatarUrl = author.AvatarUrl
+                } : new UserSummaryDto
                 {
                     Id = t.AuthorId.ToString(),
-                    Username = "user_" + t.AuthorId,
+                    Username = $"user_{t.AuthorId}",
                     AvatarUrl = null
                 },
-                Category = new CategorySummaryDto
+                Category = categories.TryGetValue(t.CategoryId, out var category) ? new CategorySummaryDto
+                {
+                    Id = category.Id.ToString(),
+                    Name = category.Name,
+                    Slug = category.Slug
+                } : new CategorySummaryDto
                 {
                     Id = t.CategoryId.ToString(),
-                    Name = "Category " + t.CategoryId,
-                    Slug = "category-" + t.CategoryId
+                    Name = $"Category {t.CategoryId}",
+                    Slug = $"category-{t.CategoryId}"
                 },
-                Tags = new TagDto[0],
+                Tags = topicTags.TryGetValue(t.Id, out var tags) 
+                    ? tags.Select(tag => new TagDto
+                    {
+                        Id = tag.Id.ToString(),
+                        Name = tag.Name,
+                        Slug = tag.Slug,
+                        Description = tag.Description,
+                        Color = tag.Color,
+                        TopicCount = tag.UsageCount
+                    }).ToArray()
+                    : new TagDto[0],
                 IsPinned = t.IsPinned,
                 IsLocked = t.IsLocked,
                 IsDeleted = t.IsDeleted,
-                ReplyCount = 0,
+                ReplyCount = 0, // TODO: 从帖子表统计
                 ViewCount = t.ViewCount,
                 LastPostedAt = t.LastPostedAt,
-                LastPoster = null,
+                LastPoster = null, // TODO: 从最后回复获取
                 CreatedAt = t.CreatedAt,
                 UpdatedAt = t.UpdatedAt
             }).ToArray();
@@ -177,7 +264,7 @@ public class TopicsController : ControllerBase
                 return BadRequest(ApiResponse.ErrorResult("VALIDATION_FAILED", "请求参数验证失败", errors));
             }
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(ApiResponse.ErrorResult("INVALID_TOKEN", "无效的访问令牌"));
@@ -277,7 +364,7 @@ public class TopicsController : ControllerBase
                 return BadRequest(ApiResponse.ErrorResult("VALIDATION_FAILED", "请求参数验证失败", errors));
             }
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(ApiResponse.ErrorResult("INVALID_TOKEN", "无效的访问令牌"));
@@ -322,7 +409,7 @@ public class TopicsController : ControllerBase
     {
         try
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(ApiResponse.ErrorResult("INVALID_TOKEN", "无效的访问令牌"));
