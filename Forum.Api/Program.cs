@@ -7,7 +7,7 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 // 加载 .env 文件
-var envFiles = new[] { ".env", ".env.docker" };
+var envFiles = new[] { ".env" };
 foreach (var envFile in envFiles)
 {
     if (File.Exists(envFile))
