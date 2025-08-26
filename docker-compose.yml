@@ -4,10 +4,10 @@ services:
     image: mysql:8.0
     container_name: forum-database
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-1105}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-change_me_strong_password}
       MYSQL_DATABASE: ${DB_DATABASE:-forum}
       MYSQL_USER: ${DB_USERNAME:-forumuser}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-1105}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-change_me_strong_password}
     ports:
       - "${DB_PORT:-3306}:3306"
     volumes:
@@ -30,8 +30,8 @@ services:
       - DB_PORT=3306
       - DB_DATABASE=${DB_DATABASE:-forum}
       - DB_USERNAME=${DB_USERNAME:-root}
-      - DB_PASSWORD=${DB_PASSWORD:-1105}
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-32-chars}
+      - DB_PASSWORD=${DB_PASSWORD:-change_me_strong_password}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-at-least-32-characters-long}
       - JWT_EXPIRATION_MINUTES=${JWT_EXPIRATION_MINUTES:-60}
       - JWT_REFRESH_EXPIRATION_DAYS=${JWT_REFRESH_EXPIRATION_DAYS:-7}
       - JWT_ISSUER=${JWT_ISSUER:-ForumApi}
@@ -82,7 +82,7 @@ services:
       - PMA_HOST=database
       - PMA_PORT=3306
       - PMA_ARBITRARY=1
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-1105}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-change_me_strong_password}
     ports:
       - "${PHPMYADMIN_PORT:-8080}:80"
     depends_on:
