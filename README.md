@@ -20,6 +20,27 @@
 - **MySQL 8.0+** (数据库)
 - **Docker** (可选，容器化部署)
 
+### 🔐 环境配置
+
+**首次使用前必须配置环境变量：**
+
+```bash
+# 1. 复制环境变量模板
+cp .env.example .env
+
+# 2. 编辑 .env 文件，修改敏感配置
+nano .env  # 或使用你喜欢的编辑器
+
+# ⚠️ 必须修改的配置项：
+# DB_PASSWORD=change_me_strong_password  # 改为强密码
+# JWT_SECRET=your-super-secret-jwt-key   # 改为复杂密钥 (至少32位)
+```
+
+**重要安全提示：**
+- 🔒 **DB_PASSWORD**: 必须使用强密码，建议 16+ 字符包含大小写字母、数字和特殊字符
+- 🔑 **JWT_SECRET**: 生产环境必须使用复杂密钥，至少 32 字符的随机字符串
+- ⚠️ **不要提交 .env 文件**：该文件已被 .gitignore 排除，包含敏感信息
+
 ### 一键启动
 
 ```bash
