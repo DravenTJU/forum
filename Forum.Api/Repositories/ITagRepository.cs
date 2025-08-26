@@ -10,4 +10,6 @@ public interface ITagRepository
     Task<long> CreateAsync(Tag tag);
     Task UpdateAsync(Tag tag);
     Task DeleteAsync(long id);
+    Task<IEnumerable<Tag>> GetByTopicIdAsync(long topicId);
+    Task<Dictionary<long, IEnumerable<Tag>>> GetByTopicIdsAsync(IEnumerable<long> topicIds);
 }

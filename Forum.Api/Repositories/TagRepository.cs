@@ -84,4 +84,56 @@ public class TagRepository : ITagRepository
         const string sql = "DELETE FROM tags WHERE id = @Id";
         await connection.ExecuteAsync(sql, new { Id = id });
     }
+
+    public async Task<IEnumerable<Tag>> GetByTopicIdAsync(long topicId)
+    {
+        using var connection = await _connectionFactory.CreateConnectionAsync();
+        
+        const string sql = @"
+            SELECT t.id, t.name, t.slug, t.description, t.color, t.usage_count as UsageCount,
+                   t.created_at as CreatedAt, t.updated_at as UpdatedAt
+            FROM tags t
+            INNER JOIN topic_tags tt ON t.id = tt.tag_id
+            WHERE tt.topic_id = @TopicId
+            ORDER BY t.name";
+
+        return await connection.QueryAsync<Tag>(sql, new { TopicId = topicId });
+    }
+
+    public async Task<Dictionary<long, IEnumerable<Tag>>> GetByTopicIdsAsync(IEnumerable<long> topicIds)
+    {
+        if (!topicIds.Any())
+        {
+            return new Dictionary<long, IEnumerable<Tag>>();
+        }
+
+        using var connection = await _connectionFactory.CreateConnectionAsync();
+        
+        const string sql = @"
+            SELECT tt.topic_id as TopicId, t.id, t.name, t.slug, t.description, t.color, 
+                   t.usage_count as UsageCount, t.created_at as CreatedAt, t.updated_at as UpdatedAt
+            FROM tags t
+            INNER JOIN topic_tags tt ON t.id = tt.tag_id
+            WHERE tt.topic_id IN @TopicIds
+            ORDER BY tt.topic_id, t.name";
+
+        var result = await connection.QueryAsync<dynamic>(sql, new { TopicIds = topicIds.ToArray() });
+        
+        return result
+            .GroupBy(r => (long)r.TopicId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(r => new Tag
+                {
+                    Id = r.id,
+                    Name = r.name,
+                    Slug = r.slug,
+                    Description = r.description,
+                    Color = r.color,
+                    UsageCount = r.UsageCount,
+                    CreatedAt = r.CreatedAt,
+                    UpdatedAt = r.UpdatedAt
+                }).AsEnumerable()
+            );
+    }
 }
