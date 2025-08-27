@@ -58,19 +58,38 @@ api.interceptors.request.use(async (config) => {
 // 响应拦截器 - 处理 ApiResponse 格式和认证错误
 api.interceptors.response.use(
   (response) => {
+    console.log('📦 API 响应拦截器 - 成功:', {
+      url: response.config.url,
+      method: response.config.method,
+      status: response.status,
+      statusText: response.statusText,
+      dataType: typeof response.data
+    });
+
     const apiResponse = response.data as ApiResponse<any>;
     
     // 如果响应中包含新的 CSRF Token，更新它
     const newCsrfToken = apiResponse.data?.csrfToken;
     if (newCsrfToken) {
       csrfToken = newCsrfToken;
+      console.log('🔑 CSRF Token 已更新');
     }
     
     // 检查 API 响应是否成功
     if (apiResponse.success) {
-      // 将 data 字段提升到响应的根级别，保持向后兼容
-      return { ...response, data: apiResponse.data };
+      console.log('✅ API 响应成功:', {
+        url: response.config.url,
+        dataLength: apiResponse.data ? (Array.isArray(apiResponse.data) ? apiResponse.data.length : 'object') : 'null'
+      });
+      // 保持完整的 ApiResponse 结构，不要提升 data 字段
+      return response;
     } else {
+      console.error('❌ API 业务逻辑失败:', {
+        url: response.config.url,
+        method: response.config.method,
+        success: apiResponse.success,
+        error: apiResponse.error
+      });
       // API 级别的错误，抛出包含错误信息的异常
       const error = new Error(apiResponse.error?.message || 'API Error');
       (error as any).response = {
@@ -81,13 +100,26 @@ api.interceptors.response.use(
     }
   },
   async (error) => {
+    console.error('💥 API 响应拦截器 - 错误:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      message: error.message,
+      response: error.response?.data,
+      isNetworkError: !error.response,
+      timestamp: new Date().toISOString()
+    });
+
     if (error.response?.status === 401) {
+      console.warn('🔐 401 未授权，清除 CSRF Token');
       // 401 错误时清除 CSRF Token
       csrfToken = null;
       
       // 只有在不在登录/注册页面时才重定向，防止无限循环
       const currentPath = window.location.pathname;
       if (currentPath !== '/login' && currentPath !== '/register') {
+        console.log('🔀 重定向到登录页面');
         window.location.href = '/login';
       }
       
@@ -97,16 +129,32 @@ api.interceptors.response.use(
     if (error.response?.status === 403) {
       const errorData = error.response.data;
       if (errorData?.error?.code === 'CSRF_TOKEN_INVALID' || errorData?.code === 'CSRF_TOKEN_INVALID') {
+        console.warn('🔑 CSRF Token 无效，尝试重新获取');
         // CSRF Token 无效时重新获取
         csrfToken = null;
         try {
           await getCsrfToken();
+          console.log('🔄 重试原始请求');
           // 重试原始请求
           return api(error.config);
         } catch (csrfError) {
+          console.error('❌ CSRF Token 重新获取失败:', csrfError);
           return Promise.reject(csrfError);
         }
       }
+    }
+
+    // 网络错误特殊处理
+    if (!error.response) {
+      console.error('🌐 网络错误或服务器无响应:', {
+        message: error.message,
+        code: error.code,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL
+        }
+      });
     }
     
     return Promise.reject(error);
