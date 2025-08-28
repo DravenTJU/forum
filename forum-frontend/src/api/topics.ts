@@ -23,18 +23,53 @@ export interface TopicsResponse {
 
 // 获取主题列表
 export const getTopics = async (params: TopicQuery): Promise<TopicsResponse> => {
-  const response = await api.get<ApiResponse<Topic[]>>('/topics', { params });
-  
-  if (!response.data.success) {
-    throw new Error(response.data.error?.message || '获取主题列表失败');
+  try {
+    console.log('🚀 开始请求主题列表:', { params, url: '/topics' });
+    
+    const response = await api.get<ApiResponse<Topic[]>>('/topics', { params });
+    
+    console.log('📥 API 响应:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      data: response.data
+    });
+    
+    if (!response.data.success) {
+      const errorMessage = response.data.error?.message || '获取主题列表失败';
+      console.error('❌ API 业务逻辑错误:', {
+        success: response.data.success,
+        error: response.data.error,
+        fullResponse: response.data
+      });
+      throw new Error(errorMessage);
+    }
+    
+    const result = {
+      topics: response.data.data || [],
+      hasMore: response.data.meta?.hasNext || false,
+      nextCursor: response.data.meta?.nextCursor
+    };
+    
+    console.log('✅ 主题列表获取成功:', {
+      topicCount: result.topics.length,
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('💥 获取主题列表失败:', {
+      error,
+      errorMessage: error instanceof Error ? error.message : '未知错误',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      params,
+      timestamp: new Date().toISOString()
+    });
+    
+    // 重新抛出错误，让上层处理
+    throw error;
   }
-  
-  // 返回符合API规范的响应格式
-  return {
-    topics: response.data.data || [],
-    hasMore: response.data.meta?.hasNext || false,
-    nextCursor: response.data.meta?.nextCursor
-  };
 };
 
 // 获取主题详情
