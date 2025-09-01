@@ -12,6 +12,8 @@ interface TopicsTableProps {
   onTopicSelect: (topicId: string, selected: boolean) => void;
   onSelectAll: (selected: boolean) => void;
   onSort: (field: 'title' | 'author' | 'lastReply' | 'replies') => void;
+  sortField?: 'title' | 'author' | 'lastReply' | 'replies' | null;
+  sortDirection?: 'asc' | 'desc';
   rowsPerPage: number;
   onRowsPerPageChange: (rows: number) => void;
   totalPages: number;
@@ -27,6 +29,8 @@ const TopicsTable = ({
   onTopicSelect,
   onSelectAll,
   onSort,
+  sortField,
+  sortDirection = 'asc',
   rowsPerPage,
   onRowsPerPageChange,
   totalPages,
@@ -35,28 +39,26 @@ const TopicsTable = ({
   totalRows,
   isLoading = false
 }: TopicsTableProps) => {
-  const [sortConfig, setSortConfig] = useState<{
-    field: string;
-    direction: 'asc' | 'desc';
-  } | null>(null);
-
   const handleSort = (field: 'title' | 'author' | 'lastReply' | 'replies') => {
-    const direction = 
-      sortConfig?.field === field && sortConfig.direction === 'asc' 
-        ? 'desc' 
-        : 'asc';
-    
-    setSortConfig({ field, direction });
     onSort(field);
   };
 
   const getSortIcon = (field: string) => {
-    if (sortConfig?.field !== field) {
-      return <ChevronUp className="w-4 h-4 inline ml-2 opacity-30" />;
+    if (sortField !== field) {
+      return (
+        <div className="flex items-center space-x-2">
+          <ChevronUp className="w-4 h-4 inline ml-2 opacity-30" />
+        </div>
+      );
     }
-    return sortConfig.direction === 'asc' 
-      ? <ChevronUp className="w-4 h-4 inline ml-2" />
-      : <ChevronDown className="w-4 h-4 inline ml-2" />;
+    return (
+      <div className="flex items-center space-x-2">
+        {sortDirection === 'asc' 
+          ? <ChevronUp className="w-4 h-4 inline ml-2 text-blue-600" />
+          : <ChevronDown className="w-4 h-4 inline ml-2 text-blue-600" />
+        }
+      </div>
+    );
   };
 
   const formatDate = (dateString: string) => {
@@ -105,10 +107,10 @@ const TopicsTable = ({
           
           {/* Title Column */}
           <div 
-            className="basis-0 box-border content-stretch flex gap-2 grow h-12 items-center justify-start min-h-px min-w-px px-4 py-0 relative shrink-0 cursor-pointer hover:bg-zinc-50"
+            className={`basis-0 box-border content-stretch flex gap-2 grow h-12 items-center justify-start min-h-px min-w-px px-4 py-0 relative shrink-0 cursor-pointer hover:bg-zinc-50 ${sortField === 'title' ? 'bg-zinc-50' : ''}`}
             onClick={() => handleSort('title')}
           >
-            <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-zinc-500">
+            <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap ${sortField === 'title' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
               <p className="leading-[20px] whitespace-pre">Title</p>
             </div>
             {getSortIcon('title')}
@@ -116,10 +118,10 @@ const TopicsTable = ({
           
           {/* Author Column */}
           <div 
-            className="box-border content-stretch flex gap-2 h-12 items-center justify-start px-4 py-0 relative shrink-0 w-[110px] cursor-pointer hover:bg-zinc-50"
+            className={`box-border content-stretch flex gap-2 h-12 items-center justify-start px-4 py-0 relative shrink-0 w-[118px] cursor-pointer hover:bg-zinc-50 ${sortField === 'author' ? 'bg-zinc-50' : ''}`}
             onClick={() => handleSort('author')}
           >
-            <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-zinc-500">
+            <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap ${sortField === 'author' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
               <p className="leading-[20px] whitespace-pre">Author</p>
             </div>
             {getSortIcon('author')}
@@ -127,10 +129,10 @@ const TopicsTable = ({
           
           {/* Last Reply Column */}
           <div 
-            className="box-border content-stretch flex gap-2 h-12 items-center justify-center px-4 py-0 relative shrink-0 w-[118px] cursor-pointer hover:bg-zinc-50"
+            className={`box-border content-stretch flex gap-2 h-12 items-center justify-center px-4 py-0 relative shrink-0 w-[118px] cursor-pointer hover:bg-zinc-50 ${sortField === 'lastReply' ? 'bg-zinc-50' : ''}`}
             onClick={() => handleSort('lastReply')}
           >
-            <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-zinc-500">
+            <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-center ${sortField === 'lastReply' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
               <p className="leading-[20px] whitespace-pre">Last reply</p>
             </div>
             {getSortIcon('lastReply')}
@@ -138,10 +140,10 @@ const TopicsTable = ({
           
           {/* Reply/View Column */}
           <div 
-            className="box-border content-stretch flex gap-2 h-12 items-center justify-center px-4 py-0 relative shrink-0 w-[147px] cursor-pointer hover:bg-zinc-50"
+            className={`box-border content-stretch flex gap-2 h-12 items-center justify-center px-4 py-0 relative shrink-0 w-[127px] cursor-pointer hover:bg-zinc-50 ${sortField === 'replies' ? 'bg-zinc-50' : ''}`}
             onClick={() => handleSort('replies')}
           >
-            <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-zinc-500">
+            <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap ${sortField === 'replies' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
               <p className="leading-[20px] whitespace-pre">Reply/View</p>
             </div>
             {getSortIcon('replies')}
@@ -184,7 +186,7 @@ const TopicsTable = ({
                 </div>
                 
                 {/* Title */}
-                <div className="box-border content-stretch flex flex-col gap-2 items-start justify-center p-[16px] relative shrink-0 w-[681px]">
+                <div className="basis-0 box-border content-stretch flex flex-col gap-2 items-start justify-center p-[16px] relative grow shrink-0">
                   <div className="content-stretch flex gap-2 items-center justify-start relative shrink-0 w-full">
                     {topic.isPinned && (
                       <Pin className="relative shrink-0 size-4 text-orange-500" />
@@ -257,7 +259,7 @@ const TopicsTable = ({
                 </div>
                 
                 {/* Reply/View Stats */}
-                <div className="box-border content-stretch flex flex-col items-start justify-center pl-8 pr-4 py-4 relative shrink-0 w-[127px]">
+                <div className="box-border content-stretch flex flex-col items-center justify-center pl-8 pr-4 py-4 relative shrink-0 w-[127px]">
                   <div className="content-stretch flex gap-1 items-center justify-start relative shrink-0">
                     <MessageSquare className="relative shrink-0 size-4 text-zinc-500" />
                     <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-right text-zinc-950">

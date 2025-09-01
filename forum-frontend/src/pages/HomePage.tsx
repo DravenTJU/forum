@@ -22,6 +22,8 @@ export function HomePage() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [tableSortField, setTableSortField] = useState<'title' | 'author' | 'lastReply' | 'replies' | null>(null);
+  const [tableSortDirection, setTableSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // 构建查询参数
   const queryParams = {
@@ -36,12 +38,44 @@ export function HomePage() {
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const { data: tags = [], isLoading: tagsLoading } = useTags();
   
-  // 获取当前页的主题数据
+  // 获取并排序主题数据
   const allTopics = topicsData?.pages.flatMap(page => page.topics) ?? [];
-  const totalTopics = allTopics.length;
+  
+  // 应用表格排序
+  const sortedTopics = tableSortField ? [...allTopics].sort((a, b) => {
+    let aValue, bValue;
+    
+    switch (tableSortField) {
+      case 'title':
+        aValue = a.title.toLowerCase();
+        bValue = b.title.toLowerCase();
+        break;
+      case 'author':
+        aValue = a.author.username.toLowerCase();
+        bValue = b.author.username.toLowerCase();
+        break;
+      case 'lastReply':
+        aValue = a.lastPostedAt ? new Date(a.lastPostedAt).getTime() : new Date(a.createdAt).getTime();
+        bValue = b.lastPostedAt ? new Date(b.lastPostedAt).getTime() : new Date(b.createdAt).getTime();
+        break;
+      case 'replies':
+        // 主要按回复数排序，如果相同则按浏览数排序
+        aValue = a.replyCount * 1000000 + a.viewCount;
+        bValue = b.replyCount * 1000000 + b.viewCount;
+        break;
+      default:
+        return 0;
+    }
+    
+    // 确保比较逻辑正确
+    const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    return tableSortDirection === 'asc' ? comparison : -comparison;
+  }) : allTopics;
+  
+  const totalTopics = sortedTopics.length;
   const totalPages = Math.ceil(totalTopics / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const currentTopics = allTopics.slice(startIndex, startIndex + rowsPerPage);
+  const currentTopics = sortedTopics.slice(startIndex, startIndex + rowsPerPage);
   
   const isLoading = topicsLoading || categoriesLoading || tagsLoading;
 
@@ -112,8 +146,15 @@ export function HomePage() {
   };
   
   const handleTableSort = (field: 'title' | 'author' | 'lastReply' | 'replies') => {
-    // TODO: 实现表格排序
-    toast.info(`表格排序功能开发中: ${field}`);
+    if (tableSortField === field) {
+      // 如果点击的是当前排序字段，切换排序方向
+      setTableSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      // 如果点击的是新字段，设置为升序排序
+      setTableSortField(field);
+      setTableSortDirection('asc');
+    }
+    setCurrentPage(1); // 重置到第一页
   };
   
   const handlePageChange = (page: number) => {
@@ -210,6 +251,8 @@ export function HomePage() {
               onTopicSelect={handleTopicSelect}
               onSelectAll={handleSelectAll}
               onSort={handleTableSort}
+              sortField={tableSortField}
+              sortDirection={tableSortDirection}
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={handleRowsPerPageChange}
               totalPages={totalPages}
