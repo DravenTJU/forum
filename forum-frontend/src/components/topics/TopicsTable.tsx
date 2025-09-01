@@ -45,20 +45,11 @@ const TopicsTable = ({
 
   const getSortIcon = (field: string) => {
     if (sortField !== field) {
-      return (
-        <div className="flex items-center space-x-2">
-          <ChevronUp className="w-4 h-4 inline ml-2 opacity-30" />
-        </div>
-      );
+      return <ChevronUp className="w-4 h-4 inline ml-2 opacity-30" />;
     }
-    return (
-      <div className="flex items-center space-x-2">
-        {sortDirection === 'asc' 
-          ? <ChevronUp className="w-4 h-4 inline ml-2 text-blue-600" />
-          : <ChevronDown className="w-4 h-4 inline ml-2 text-blue-600" />
-        }
-      </div>
-    );
+    return sortDirection === 'asc' 
+      ? <ChevronUp className="w-4 h-4 inline ml-2" />
+      : <ChevronDown className="w-4 h-4 inline ml-2" />;
   };
 
   const formatDate = (dateString: string) => {

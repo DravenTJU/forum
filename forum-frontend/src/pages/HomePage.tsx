@@ -185,8 +185,8 @@ export function HomePage() {
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
           onSearchSubmit={handleSearchSubmit}
-          onNewTopicClick={handleNewTopic}
-          sidebarContent={sidebarContent}
+          // onNewTopicClick={handleNewTopic}
+          // sidebarContent={sidebarContent}
         />
         <div className="flex flex-1">
           <div className="hidden md:flex">
@@ -216,8 +216,8 @@ export function HomePage() {
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
         onSearchSubmit={handleSearchSubmit}
-        onNewTopicClick={handleNewTopic}
-        sidebarContent={sidebarContent}
+        // onNewTopicClick={handleNewTopic}
+        // sidebarContent={sidebarContent}
       />
       
       {/* 主体布局 */}
