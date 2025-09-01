@@ -90,4 +90,24 @@ public class PostService : IPostService
 
         _logger.LogInformation("Post {PostId} deleted", id);
     }
+
+    public async Task<int> GetReplyCountByTopicIdAsync(long topicId)
+    {
+        return await _postRepository.GetReplyCountByTopicIdAsync(topicId);
+    }
+
+    public async Task<Post?> GetLastPostByTopicIdAsync(long topicId)
+    {
+        return await _postRepository.GetLastPostByTopicIdAsync(topicId);
+    }
+
+    public async Task<Dictionary<long, int>> GetReplyCountsByTopicIdsAsync(IEnumerable<long> topicIds)
+    {
+        return await _postRepository.GetReplyCountsByTopicIdsAsync(topicIds);
+    }
+
+    public async Task<Dictionary<long, Post?>> GetLastPostsByTopicIdsAsync(IEnumerable<long> topicIds)
+    {
+        return await _postRepository.GetLastPostsByTopicIdsAsync(topicIds);
+    }
 }
