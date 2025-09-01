@@ -45,11 +45,11 @@ const TopicsTable = ({
 
   const getSortIcon = (field: string) => {
     if (sortField !== field) {
-      return <ChevronUp className="w-4 h-4 inline ml-2 opacity-30" />;
+      return <ChevronUp className="w-4 h-4 ml-1 opacity-30 flex-shrink-0" />;
     }
     return sortDirection === 'asc' 
-      ? <ChevronUp className="w-4 h-4 inline ml-2" />
-      : <ChevronDown className="w-4 h-4 inline ml-2" />;
+      ? <ChevronUp className="w-4 h-4 ml-1 text-blue-600 flex-shrink-0" />
+      : <ChevronDown className="w-4 h-4 ml-1 text-blue-600 flex-shrink-0" />;
   };
 
   const formatDate = (dateString: string) => {
@@ -98,7 +98,7 @@ const TopicsTable = ({
           
           {/* Title Column */}
           <div 
-            className={`basis-0 box-border content-stretch flex gap-2 grow h-12 items-center justify-start min-h-px min-w-px px-4 py-0 relative shrink-0 cursor-pointer hover:bg-zinc-50 ${sortField === 'title' ? 'bg-zinc-50' : ''}`}
+            className={`basis-0 box-border content-stretch flex items-center justify-start min-h-px min-w-px px-4 py-0 relative grow h-12 shrink-0 cursor-pointer hover:bg-zinc-50 ${sortField === 'title' ? 'bg-zinc-50' : ''}`}
             onClick={() => handleSort('title')}
           >
             <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap ${sortField === 'title' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
@@ -109,7 +109,7 @@ const TopicsTable = ({
           
           {/* Author Column */}
           <div 
-            className={`box-border content-stretch flex gap-2 h-12 items-center justify-start px-4 py-0 relative shrink-0 w-[118px] cursor-pointer hover:bg-zinc-50 ${sortField === 'author' ? 'bg-zinc-50' : ''}`}
+            className={`box-border content-stretch flex items-center justify-start px-4 py-0 relative h-12 shrink-0 w-[118px] cursor-pointer hover:bg-zinc-50 ${sortField === 'author' ? 'bg-zinc-50' : ''}`}
             onClick={() => handleSort('author')}
           >
             <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap ${sortField === 'author' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
@@ -120,7 +120,7 @@ const TopicsTable = ({
           
           {/* Last Reply Column */}
           <div 
-            className={`box-border content-stretch flex gap-2 h-12 items-center justify-center px-4 py-0 relative shrink-0 w-[118px] cursor-pointer hover:bg-zinc-50 ${sortField === 'lastReply' ? 'bg-zinc-50' : ''}`}
+            className={`box-border content-stretch flex items-center justify-center px-4 py-0 relative h-12 shrink-0 w-[118px] cursor-pointer hover:bg-zinc-50 ${sortField === 'lastReply' ? 'bg-zinc-50' : ''}`}
             onClick={() => handleSort('lastReply')}
           >
             <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-center ${sortField === 'lastReply' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
@@ -131,7 +131,7 @@ const TopicsTable = ({
           
           {/* Reply/View Column */}
           <div 
-            className={`box-border content-stretch flex gap-2 h-12 items-center justify-center px-4 py-0 relative shrink-0 w-[127px] cursor-pointer hover:bg-zinc-50 ${sortField === 'replies' ? 'bg-zinc-50' : ''}`}
+            className={`box-border content-stretch flex items-center justify-center px-4 py-0 relative h-12 shrink-0 w-[127px] cursor-pointer hover:bg-zinc-50 ${sortField === 'replies' ? 'bg-zinc-50' : ''}`}
             onClick={() => handleSort('replies')}
           >
             <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap ${sortField === 'replies' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
