@@ -244,7 +244,7 @@ const TopicsTable = ({
                     </>
                   ) : (
                     <div className="flex flex-col font-normal justify-center relative shrink-0 text-[#8e8e8e] text-[12px]">
-                      <p className="leading-[20px] text-nowrap whitespace-pre">无回复</p>
+                      <p className="leading-[20px] text-nowrap whitespace-pre">No reply</p>
                     </div>
                   )}
                 </div>

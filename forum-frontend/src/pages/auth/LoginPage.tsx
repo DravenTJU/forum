@@ -15,8 +15,8 @@ import { useFormError, createFieldErrorHandler } from '@/hooks/useFormError';
 import type { LoginRequest } from '@/types/auth';
 
 const loginSchema = z.object({
-  email: z.string().email('请输入有效的邮箱地址'),
-  password: z.string().min(6, '密码至少需要6个字符'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 export function LoginPage() {
@@ -39,15 +39,15 @@ export function LoginPage() {
   const fieldErrorHandler = createFieldErrorHandler<LoginRequest>(form.setError, form.clearErrors);
 
   const onSubmit = (data: LoginRequest) => {
-    clearErrors(); // 清除之前的错误
+    clearErrors(); // Clear previous errors
     
     login(data, {
       onSuccess: () => {
         navigate(from, { replace: true });
       },
       onError: (error: any) => {
-        // 设置表单错误或字段错误
-        setErrorFromResponse(error, '登录失败');
+        // Set form errors or field errors
+        setErrorFromResponse(error, 'Login failed');
         fieldErrorHandler.setFieldErrorsFromResponse(error);
       },
     });
@@ -57,15 +57,15 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">欢迎回来</CardTitle>
+          <CardTitle className="text-2xl text-center">Welcome Back</CardTitle>
           <CardDescription className="text-center">
-            请登录您的账户
+            Please sign in to your account
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* 显示表单级错误 */}
+              {/* Display form-level errors */}
               <FormError 
                 error={errorState.message}
                 errors={errorState.fieldErrors}
@@ -75,11 +75,11 @@ export function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>邮箱地址</FormLabel>
+                    <FormLabel>Email Address</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="请输入邮箱地址"
+                        placeholder="Enter your email address"
                         {...field}
                       />
                     </FormControl>
@@ -93,12 +93,12 @@ export function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>密码</FormLabel>
+                    <FormLabel>Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           type={showPassword ? 'text' : 'password'}
-                          placeholder="请输入密码"
+                          placeholder="Enter your password"
                           {...field}
                         />
                         <Button
@@ -126,7 +126,7 @@ export function LoginPage() {
                   to="/forgot-password"
                   className="text-sm text-blue-600 hover:text-blue-500"
                 >
-                  忘记密码？
+                  Forgot password?
                 </Link>
               </div>
 
@@ -135,7 +135,7 @@ export function LoginPage() {
                 className="w-full"
                 disabled={isLoggingIn}
               >
-                {isLoggingIn ? '登录中...' : '登录'}
+                {isLoggingIn ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
           </Form>
@@ -146,14 +146,14 @@ export function LoginPage() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">还没有账户？</span>
+                <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
               </div>
             </div>
 
             <div className="mt-6">
               <Link to="/register">
                 <Button variant="outline" className="w-full">
-                  立即注册
+                  Sign Up Now
                 </Button>
               </Link>
             </div>

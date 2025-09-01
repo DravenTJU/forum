@@ -85,26 +85,26 @@ const SearchHeader = ({
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
-                个人主页
+                Profile
               </DropdownMenuItem>
               <DropdownMenuItem>
-                我的主题
+                Themes
               </DropdownMenuItem>
               <DropdownMenuItem>
-                书签
+                Bookmarks
               </DropdownMenuItem>
               <DropdownMenuItem>
-                通知
+                Notifications
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
-                设置
+                Settings
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => logout()}
                 className="text-red-600 focus:text-red-600"
               >
-                退出登录
+                Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -220,7 +220,7 @@ const TopicFilters = ({
       <div className="flex items-center space-x-3">
         {/* 排序选择 */}
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">排序:</span>
+          <span className="text-sm text-muted-foreground">Order by:</span>
           <Select value={sortBy} onValueChange={onSortChange}>
             <SelectTrigger className="w-32">
               <SelectValue />
