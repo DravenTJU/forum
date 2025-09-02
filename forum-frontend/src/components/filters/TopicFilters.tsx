@@ -64,10 +64,10 @@ const TopicFilters = ({
   };
 
   const sortOptions = [
-    { value: 'latest', label: '最新回复' },
-    { value: 'hot', label: '热门话题' },
-    { value: 'new', label: '最新发布' },
-    { value: 'top', label: '浏览最多' }
+    { value: 'latest', label: 'Latest Reply' },
+    { value: 'hot', label: 'Hot Topics' },
+    { value: 'new', label: 'Newest' },
+    { value: 'top', label: 'Most Views' }
   ];
 
   return (
@@ -90,18 +90,18 @@ const TopicFilters = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-80" align="start">
-            <DropdownMenuLabel>筛选选项</DropdownMenuLabel>
+            <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
             <DropdownMenuSeparator />
             
             {/* 分类筛选 */}
             <div className="p-2">
-              <div className="text-sm font-medium mb-2">分类</div>
+              <div className="text-sm font-medium mb-2">Category</div>
               <div className="space-y-1">
                 <DropdownMenuCheckboxItem
                   checked={!selectedCategory}
                   onCheckedChange={() => onCategoryChange(undefined)}
                 >
-                  全部分类
+                  All Categories
                 </DropdownMenuCheckboxItem>
                 {categories.map((category) => (
                   <DropdownMenuCheckboxItem
@@ -121,7 +121,7 @@ const TopicFilters = ({
             
             {/* 标签筛选 */}
             <div className="p-2">
-              <div className="text-sm font-medium mb-2">标签</div>
+              <div className="text-sm font-medium mb-2">Tags</div>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {tags.slice(0, 15).map((tag) => (
                   <DropdownMenuCheckboxItem
@@ -143,7 +143,7 @@ const TopicFilters = ({
                 ))}
                 {tags.length > 15 && (
                   <div className="text-xs text-muted-foreground p-2">
-                    还有 {tags.length - 15} 个标签...
+                    {tags.length - 15} more tags...
                   </div>
                 )}
               </div>
@@ -156,7 +156,7 @@ const TopicFilters = ({
                   onClick={onClearFilters}
                   className="text-red-600 focus:text-red-600"
                 >
-                  清除所有筛选
+                  Clear All Filters
                 </DropdownMenuItem>
               </>
             )}
@@ -210,7 +210,7 @@ const TopicFilters = ({
                 onClick={onClearFilters}
                 className="text-muted-foreground hover:text-foreground"
               >
-                清除筛选 ({filterCount})
+                Clear Filters ({filterCount})
               </Button>
             )}
           </div>

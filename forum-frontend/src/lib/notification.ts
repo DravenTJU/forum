@@ -3,12 +3,12 @@ import type { ErrorCode } from '@/types/api';
 import { getBusinessErrorMessage } from './error-utils';
 
 /**
- * 通知类型
+ * Notification type
  */
 export type NotificationType = 'success' | 'error' | 'warning' | 'info';
 
 /**
- * 通知选项
+ * Notification options
  */
 interface NotificationOptions {
   duration?: number;
@@ -20,12 +20,12 @@ interface NotificationOptions {
 }
 
 /**
- * 通知系统
- * 基于 sonner 的增强通知系统
+ * Notification system
+ * Enhanced notification system based on sonner
  */
 export class NotificationSystem {
   /**
-   * 显示成功消息
+   * Show success message
    */
   static success(message: string, options?: NotificationOptions) {
     return toast.success(message, {
@@ -36,18 +36,18 @@ export class NotificationSystem {
   }
 
   /**
-   * 显示错误消息
+   * Show error message
    */
   static error(message: string, options?: NotificationOptions) {
     return toast.error(message, {
-      duration: options?.duration || 6000, // 错误消息显示更长时间
+      duration: options?.duration || 6000, // Error messages display longer
       description: options?.description,
       action: options?.action,
     });
   }
 
   /**
-   * 显示警告消息
+   * Show warning message
    */
   static warning(message: string, options?: NotificationOptions) {
     return toast.warning(message, {
@@ -58,7 +58,7 @@ export class NotificationSystem {
   }
 
   /**
-   * 显示信息消息
+   * Show info message
    */
   static info(message: string, options?: NotificationOptions) {
     return toast.info(message, {
@@ -69,14 +69,14 @@ export class NotificationSystem {
   }
 
   /**
-   * 显示加载消息
+   * Show loading message
    */
   static loading(message: string, promise?: Promise<any>) {
     if (promise) {
       return toast.promise(promise, {
         loading: message,
-        success: '操作成功',
-        error: '操作失败',
+        success: 'Operation successful',
+        error: 'Operation failed',
       });
     }
     
@@ -84,7 +84,7 @@ export class NotificationSystem {
   }
 
   /**
-   * 显示业务错误码对应的消息
+   * Show message corresponding to business error code
    */
   static businessError(code: ErrorCode, customMessage?: string) {
     const message = customMessage || getBusinessErrorMessage(code);
@@ -95,44 +95,44 @@ export class NotificationSystem {
   }
 
   /**
-   * 显示网络错误
+   * Show network error
    */
   static networkError() {
-    return this.error('网络连接异常，请检查网络后重试', {
+    return this.error('Network connection error, please check your connection and try again', {
       duration: 8000,
       action: {
-        label: '重试',
+        label: 'Retry',
         onClick: () => window.location.reload(),
       },
     });
   }
 
   /**
-   * 显示操作确认
+   * Show operation confirmation
    */
   static confirm(message: string, onConfirm: () => void, onCancel?: () => void) {
     return toast(message, {
       duration: Infinity,
       action: {
-        label: '确认',
+        label: 'Confirm',
         onClick: () => onConfirm(),
       },
       cancel: onCancel ? {
-        label: '取消',
+        label: 'Cancel',
         onClick: () => onCancel(),
       } : undefined,
     });
   }
 
   /**
-   * 关闭所有通知
+   * Dismiss all notifications
    */
   static dismiss() {
     toast.dismiss();
   }
 
   /**
-   * 关闭特定通知
+   * Dismiss specific notification
    */
   static dismissById(id: string | number) {
     toast.dismiss(id);
@@ -140,7 +140,7 @@ export class NotificationSystem {
 }
 
 /**
- * 快捷通知方法
+ * Shortcut notification methods
  */
 export const notify = {
   success: NotificationSystem.success,
@@ -155,58 +155,58 @@ export const notify = {
 };
 
 /**
- * 常用通知消息
+ * Common notification messages
  */
 export const Messages = {
-  // 通用操作
-  SAVE_SUCCESS: '保存成功',
-  SAVE_FAILED: '保存失败',
-  DELETE_SUCCESS: '删除成功', 
-  DELETE_FAILED: '删除失败',
-  UPDATE_SUCCESS: '更新成功',
-  UPDATE_FAILED: '更新失败',
-  COPY_SUCCESS: '复制成功',
+  // General operations
+  SAVE_SUCCESS: 'Save successful',
+  SAVE_FAILED: 'Save failed',
+  DELETE_SUCCESS: 'Delete successful', 
+  DELETE_FAILED: 'Delete failed',
+  UPDATE_SUCCESS: 'Update successful',
+  UPDATE_FAILED: 'Update failed',
+  COPY_SUCCESS: 'Copy successful',
   
-  // 认证相关
-  LOGIN_SUCCESS: '登录成功',
-  LOGIN_FAILED: '登录失败',
-  LOGOUT_SUCCESS: '已退出登录',
-  REGISTER_SUCCESS: '注册成功',
-  REGISTER_FAILED: '注册失败',
-  PASSWORD_RESET_SENT: '密码重置邮件已发送',
-  EMAIL_VERIFICATION_SENT: '验证邮件已发送',
+  // Authentication related
+  LOGIN_SUCCESS: 'Login successful',
+  LOGIN_FAILED: 'Login failed',
+  LOGOUT_SUCCESS: 'Logged out successfully',
+  REGISTER_SUCCESS: 'Registration successful',
+  REGISTER_FAILED: 'Registration failed',
+  PASSWORD_RESET_SENT: 'Password reset email sent',
+  EMAIL_VERIFICATION_SENT: 'Verification email sent',
   
-  // 网络和系统
-  NETWORK_ERROR: '网络连接异常',
-  SERVER_ERROR: '服务器错误，请稍后重试',
-  UNAUTHORIZED: '登录已过期，请重新登录',
-  FORBIDDEN: '权限不足',
-  NOT_FOUND: '请求的资源不存在',
+  // Network and system
+  NETWORK_ERROR: 'Network connection error',
+  SERVER_ERROR: 'Server error, please try again later',
+  UNAUTHORIZED: 'Login expired, please log in again',
+  FORBIDDEN: 'Insufficient permissions',
+  NOT_FOUND: 'Requested resource not found',
   
-  // 表单验证
-  REQUIRED_FIELD: '此字段为必填项',
-  INVALID_EMAIL: '请输入有效的邮箱地址',
-  PASSWORD_TOO_SHORT: '密码长度不能少于8位',
-  PASSWORDS_NOT_MATCH: '两次输入的密码不一致',
+  // Form validation
+  REQUIRED_FIELD: 'This field is required',
+  INVALID_EMAIL: 'Please enter a valid email address',
+  PASSWORD_TOO_SHORT: 'Password must be at least 8 characters',
+  PASSWORDS_NOT_MATCH: 'Passwords do not match',
   
-  // 文件操作
-  FILE_UPLOAD_SUCCESS: '文件上传成功',
-  FILE_UPLOAD_FAILED: '文件上传失败',
-  FILE_TOO_LARGE: '文件大小超出限制',
-  INVALID_FILE_TYPE: '不支持的文件类型',
+  // File operations
+  FILE_UPLOAD_SUCCESS: 'File upload successful',
+  FILE_UPLOAD_FAILED: 'File upload failed',
+  FILE_TOO_LARGE: 'File size exceeds limit',
+  INVALID_FILE_TYPE: 'Unsupported file type',
 } as const;
 
 /**
- * 操作结果通知
+ * Operation result notification
  */
 export function notifyResult<T>(
   operation: string,
   result: { success: boolean; data?: T; error?: any }
 ) {
   if (result.success) {
-    notify.success(`${operation}成功`);
+    notify.success(`${operation} successful`);
   } else {
-    notify.error(`${operation}失败: ${result.error?.message || '未知错误'}`);
+    notify.error(`${operation} failed: ${result.error?.message || 'Unknown error'}`);
   }
   
   return result;

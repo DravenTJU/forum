@@ -14,16 +14,16 @@ import { useAuth } from '@/hooks/useAuth';
 
 const registerSchema = z.object({
   username: z.string()
-    .min(3, '用户名至少需要3个字符')
-    .max(20, '用户名不能超过20个字符')
-    .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字和下划线'),
-  email: z.string().email('请输入有效的邮箱地址'),
+    .min(3, 'Username must be at least 3 characters')
+    .max(20, 'Username cannot exceed 20 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers and underscores'),
+  email: z.string().email('Please enter a valid email address'),
   password: z.string()
-    .min(6, '密码至少需要6个字符')
-    .max(100, '密码不能超过100个字符'),
+    .min(6, 'Password must be at least 6 characters')
+    .max(100, 'Password cannot exceed 100 characters'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: '两次输入的密码不一致',
+  message: 'Passwords do not match',
   path: ['confirmPassword'],
 });
 
@@ -52,7 +52,7 @@ export function RegisterPage() {
   });
 
   const onSubmit = (data: RegisterFormData) => {
-    // 清除之前的错误
+    // Clear previous errors
     clearErrors();
     
     const { confirmPassword: _, ...registerData } = data;
@@ -67,9 +67,9 @@ export function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">创建账户</CardTitle>
+          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
           <CardDescription className="text-center">
-            请填写以下信息注册账户
+            Please fill in the information below to register
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -84,10 +84,10 @@ export function RegisterPage() {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>用户名</FormLabel>
+                    <FormLabel>Username</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="请输入用户名"
+                        placeholder="Enter username"
                         {...field}
                       />
                     </FormControl>
@@ -101,11 +101,11 @@ export function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>邮箱地址</FormLabel>
+                    <FormLabel>Email Address</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="请输入邮箱地址"
+                        placeholder="Enter email address"
                         {...field}
                       />
                     </FormControl>
@@ -119,12 +119,12 @@ export function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>密码</FormLabel>
+                    <FormLabel>Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           type={showPassword ? 'text' : 'password'}
-                          placeholder="请输入密码"
+                          placeholder="Enter password"
                           {...field}
                         />
                         <Button
@@ -152,12 +152,12 @@ export function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>确认密码</FormLabel>
+                    <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           type={showConfirmPassword ? 'text' : 'password'}
-                          placeholder="请再次输入密码"
+                          placeholder="Enter password again"
                           {...field}
                         />
                         <Button
@@ -185,7 +185,7 @@ export function RegisterPage() {
                 className="w-full"
                 disabled={isRegistering}
               >
-                {isRegistering ? '注册中...' : '注册'}
+                {isRegistering ? 'Registering...' : 'Register'}
               </Button>
             </form>
           </Form>
@@ -196,14 +196,14 @@ export function RegisterPage() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">已有账户？</span>
+                <span className="px-2 bg-white text-gray-500">Already have an account?</span>
               </div>
             </div>
 
             <div className="mt-6">
               <Link to="/login">
                 <Button variant="outline" className="w-full">
-                  立即登录
+                  Sign In Now
                 </Button>
               </Link>
             </div>
