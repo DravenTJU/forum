@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 import { ChevronUp, ChevronDown, MessageSquare, Eye, Pin, Lock, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 
 import { Checkbox } from '@/components/ui/checkbox';
@@ -39,8 +37,21 @@ const TopicsTable = ({
   totalRows,
   isLoading = false
 }: TopicsTableProps) => {
+  const navigate = useNavigate();
+  
   const handleSort = (field: 'title' | 'author' | 'lastReply' | 'replies') => {
     onSort(field);
+  };
+  
+  // 生成主题详情页 URL
+  const getTopicUrl = (topic: Topic) => {
+    return `/t/${topic.id}/${topic.slug || encodeURIComponent(topic.title.toLowerCase().replace(/\s+/g, '-'))}`;
+  };
+  
+  // 处理主题点击
+  const handleTopicClick = (topic: Topic) => {
+    const url = getTopicUrl(topic);
+    navigate(url);
   };
 
   const getSortIcon = (field: string) => {
@@ -185,7 +196,10 @@ const TopicsTable = ({
                     {topic.isLocked && (
                       <Lock className="relative shrink-0 size-4 text-red-500" />
                     )}
-                    <div className="basis-0 flex flex-col font-medium grow justify-center leading-[0] min-h-px min-w-px relative shrink-0 text-[14px] text-zinc-950 hover:text-blue-600 cursor-pointer">
+                    <div 
+                      className="basis-0 flex flex-col font-medium grow justify-center leading-[0] min-h-px min-w-px relative shrink-0 text-[14px] text-zinc-950 hover:text-blue-600 cursor-pointer"
+                      onClick={() => handleTopicClick(topic)}
+                    >
                       <p className="leading-[20px]">{topic.title}</p>
                     </div>
                   </div>
