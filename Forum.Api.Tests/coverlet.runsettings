@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <!-- 包含的程序集 -->
+          <Include>
+            [Forum.Api]*
+            [Forum.Api.Infrastructure]*
+            [Forum.Api.Services]*
+            [Forum.Api.Repositories]*
+          </Include>
+          
+          <!-- 排除的程序集 -->
+          <Exclude>
+            [Forum.Api.Tests]*
+            [*.Tests]*
+            [*]*.Program
+            [*]*Migrations*
+          </Exclude>
+          
+          <!-- 排除的类型和成员 -->
+          <ExcludeByAttribute>
+            <Attribute>System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute</Attribute>
+            <Attribute>System.ObsoleteAttribute</Attribute>
+            <Attribute>System.ComponentModel.EditorBrowsableAttribute</Attribute>
+          </ExcludeByAttribute>
+          
+          <!-- 排除的文件 -->
+          <ExcludeByFile>
+            <File>**/Migrations/*.cs</File>
+            <File>**/Program.cs</File>
+            <File>**/Startup.cs</File>
+          </ExcludeByFile>
+          
+          <!-- 输出格式 -->
+          <Format>cobertura,opencover</Format>
+          
+          <!-- 其他设置 -->
+          <UseSourceLink>true</UseSourceLink>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+          <SingleHit>false</SingleHit>
+          <SkipAutoProps>true</SkipAutoProps>
+          <DoesNotReturnAttribute>DoesNotReturnAttribute</DoesNotReturnAttribute>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+  
+  <!-- 测试运行器配置 -->
+  <RunConfiguration>
+    <MaxCpuCount>0</MaxCpuCount>
+    <ResultsDirectory>./TestResults</ResultsDirectory>
+    <TreatNoTestsAsError>false</TreatNoTestsAsError>
+  </RunConfiguration>
+  
+  <!-- xUnit 配置 -->
+  <TestRunParameters>
+    <Parameter name="ParallelizeTestCollections" value="true" />
+    <Parameter name="MaxParallelThreads" value="0" />
+  </TestRunParameters>
+</RunSettings>

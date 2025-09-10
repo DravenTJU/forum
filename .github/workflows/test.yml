@@ -1,0 +1,267 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build solution
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Run unit tests
+      run: |
+        dotnet test Forum.Api.Tests/Forum.Api.Tests.csproj \
+          --configuration Release \
+          --no-build \
+          --verbosity normal \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults \
+          --settings Forum.Api.Tests/coverlet.runsettings \
+          --logger trx \
+          --logger "console;verbosity=detailed"
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: unit-test-results
+        path: TestResults/**/*.trx
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: unit-coverage-reports
+        path: TestResults/**/*.xml
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: forum_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build solution
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Wait for MySQL
+      run: |
+        until mysqladmin ping -h"127.0.0.1" -P3306 -uroot -ppassword --silent; do
+          echo 'waiting for mysql...'
+          sleep 1
+        done
+
+    - name: Run integration tests
+      env:
+        ConnectionStrings__DefaultConnection: "Server=127.0.0.1;Port=3306;Database=forum_test;Uid=root;Pwd=password;CharSet=utf8mb4;"
+      run: |
+        dotnet test Forum.Api.Tests/Forum.Api.Tests.csproj \
+          --configuration Release \
+          --no-build \
+          --verbosity normal \
+          --collect:"XPlat Code Coverage" \
+          --results-directory ./TestResults \
+          --settings Forum.Api.Tests/coverlet.runsettings \
+          --filter Category=Integration \
+          --logger trx \
+          --logger "console;verbosity=detailed"
+
+    - name: Upload integration test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: integration-test-results
+        path: TestResults/**/*.trx
+
+    - name: Upload integration coverage reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: integration-coverage-reports
+        path: TestResults/**/*.xml
+
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: always()
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download unit test results
+      uses: actions/download-artifact@v4
+      with:
+        name: unit-test-results
+        path: ./TestResults/Unit
+
+    - name: Download integration test results
+      uses: actions/download-artifact@v4
+      with:
+        name: integration-test-results
+        path: ./TestResults/Integration
+
+    - name: Download unit coverage reports
+      uses: actions/download-artifact@v4
+      with:
+        name: unit-coverage-reports
+        path: ./Coverage/Unit
+
+    - name: Download integration coverage reports
+      uses: actions/download-artifact@v4
+      with:
+        name: integration-coverage-reports
+        path: ./Coverage/Integration
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Install ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+    - name: Generate coverage report
+      run: |
+        reportgenerator \
+          -reports:"Coverage/**/*.xml" \
+          -targetdir:"Coverage/Report" \
+          -reporttypes:"Html;Cobertura;JsonSummary" \
+          -verbosity:"Info"
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: Coverage/Report/
+
+    - name: Check coverage thresholds
+      run: |
+        # Read coverage percentage from JsonSummary
+        coverage=$(cat Coverage/Report/Summary.json | jq -r '.summary.linecoverage')
+        echo "Overall coverage: $coverage%"
+        
+        # Check if coverage meets minimum threshold (80%)
+        if (( $(echo "$coverage >= 80" | bc -l) )); then
+          echo "✅ Coverage threshold met: $coverage% >= 80%"
+        else
+          echo "❌ Coverage below threshold: $coverage% < 80%"
+          exit 1
+        fi
+
+    - name: Comment PR with coverage
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const coverage = JSON.parse(fs.readFileSync('Coverage/Report/Summary.json', 'utf8'));
+          
+          const body = `## 🧪 Test Results
+          
+          ### Coverage Summary
+          - **Line Coverage**: ${coverage.summary.linecoverage}%
+          - **Branch Coverage**: ${coverage.summary.branchcoverage}%
+          - **Method Coverage**: ${coverage.summary.methodcoverage}%
+          
+          ### Quality Gates
+          ${coverage.summary.linecoverage >= 80 ? '✅' : '❌'} Line Coverage >= 80%
+          ${coverage.summary.branchcoverage >= 75 ? '✅' : '❌'} Branch Coverage >= 75%
+          ${coverage.summary.methodcoverage >= 90 ? '✅' : '❌'} Method Coverage >= 90%
+          
+          [View detailed coverage report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Run performance benchmarks
+      run: |
+        dotnet run --project Forum.Api.Tests \
+          --configuration Release \
+          --filter Category=Performance \
+          --logger "console;verbosity=detailed"
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-results
+        path: BenchmarkDotNet.Artifacts/
