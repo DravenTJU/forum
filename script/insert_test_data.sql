@@ -1,16 +1,16 @@
 -- =====================================================================
--- 论坛系统测试数据脚本
+-- Forum System Test Data Script
 -- 
--- 描述：为 Discourse 风格论坛生成全面的测试数据
--- 版本：1.0
--- 创建日期：2025-08-25
+-- Description: Generate comprehensive test data for Discourse-style forum
+-- Version: 1.0
+-- Created: 2025-08-25
 -- 
--- 包含数据：
--- - 用户账户（不同角色：管理员、版主、普通用户）
--- - 分类和标签
--- - 主题帖子（包含不同状态：置顶、锁定、正常）
--- - 回帖（包含引用和提及）
--- - 用户角色权限
+-- Included Data:
+-- - User accounts (different roles: admin, moderator, regular users)
+-- - Categories and tags
+-- - Topic posts (including different statuses: pinned, locked, normal)
+-- - Replies (including quotes and mentions)
+-- - User role permissions
 -- =====================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -18,7 +18,7 @@ SET AUTOCOMMIT = 0;
 
 START TRANSACTION;
 
--- 清理现有测试数据（保留系统默认数据）
+-- Clean existing test data (preserve system default data)
 DELETE FROM post_mentions WHERE post_id > 0;
 DELETE FROM posts WHERE id > 0;
 DELETE FROM topic_tags WHERE topic_id > 0;
@@ -29,54 +29,54 @@ DELETE FROM refresh_tokens WHERE user_id > 0;
 DELETE FROM email_verification_tokens WHERE user_id > 0;
 DELETE FROM users WHERE id > 0;
 
--- 重置自增 ID
+-- Reset auto-increment IDs
 ALTER TABLE users AUTO_INCREMENT = 1;
 ALTER TABLE topics AUTO_INCREMENT = 1;
 ALTER TABLE posts AUTO_INCREMENT = 1;
 
 -- =====================================================================
--- 1. 插入测试用户
+-- 1. Insert test users
 -- =====================================================================
 
--- 管理员用户
+-- Admin users
 INSERT INTO users (id, username, email, password_hash, status, email_verified, avatar_url, bio, last_seen_at, created_at) VALUES
-(1, 'admin', 'admin@forum.example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin', '系统管理员，负责论坛运营和管理', NOW(), NOW() - INTERVAL 30 DAY),
-(2, 'moderator', 'mod@forum.example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=moderator', '版主，维护论坛秩序', NOW(), NOW() - INTERVAL 25 DAY);
+(1, 'admin', 'admin@forum.example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin', 'System administrator, responsible for forum operations and management', NOW(), NOW() - INTERVAL 30 DAY),
+(2, 'moderator', 'mod@forum.example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=moderator', 'Moderator, maintaining forum order', NOW(), NOW() - INTERVAL 25 DAY);
 
--- 活跃用户
+-- Active users
 INSERT INTO users (id, username, email, password_hash, status, email_verified, avatar_url, bio, last_seen_at, created_at) VALUES
-(3, 'developer_jane', 'jane@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=jane', '全栈开发工程师，专注于现代Web技术', NOW(), NOW() - INTERVAL 20 DAY),
-(4, 'backend_bob', 'bob@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob', '后端开发专家，熟悉微服务架构', NOW() - INTERVAL 30 MINUTE, NOW() - INTERVAL 18 DAY),
-(5, 'frontend_alice', 'alice@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice', 'UI/UX设计师兼前端开发', NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 15 DAY),
-(6, 'devops_charlie', 'charlie@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie', 'DevOps工程师，容器化和云原生专家', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 12 DAY);
+(3, 'developer_jane', 'jane@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=jane', 'Full-stack developer, focused on modern web technologies', NOW(), NOW() - INTERVAL 20 DAY),
+(4, 'backend_bob', 'bob@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob', 'Backend development expert, familiar with microservices architecture', NOW() - INTERVAL 30 MINUTE, NOW() - INTERVAL 18 DAY),
+(5, 'frontend_alice', 'alice@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice', 'UI/UX designer and frontend developer', NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 15 DAY),
+(6, 'devops_charlie', 'charlie@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=charlie', 'DevOps engineer, containerization and cloud-native expert', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 12 DAY);
 
--- 普通用户
+-- Regular users
 INSERT INTO users (id, username, email, password_hash, status, email_verified, avatar_url, bio, last_seen_at, created_at) VALUES
-(7, 'newbie_david', 'david@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=david', '编程新手，正在学习Web开发', NOW() - INTERVAL 3 HOUR, NOW() - INTERVAL 10 DAY),
-(8, 'student_emma', 'emma@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=emma', '计算机科学学生，对AI和机器学习感兴趣', NOW() - INTERVAL 6 HOUR, NOW() - INTERVAL 8 DAY),
-(9, 'freelancer_frank', 'frank@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=frank', '自由职业者，全栈独立开发', NOW() - INTERVAL 12 HOUR, NOW() - INTERVAL 6 DAY),
-(10, 'senior_grace', 'grace@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=grace', '资深技术架构师，15年开发经验', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 4 DAY);
+(7, 'newbie_david', 'david@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=david', 'Programming newbie, currently learning web development', NOW() - INTERVAL 3 HOUR, NOW() - INTERVAL 10 DAY),
+(8, 'student_emma', 'emma@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=emma', 'Computer science student, interested in AI and machine learning', NOW() - INTERVAL 6 HOUR, NOW() - INTERVAL 8 DAY),
+(9, 'freelancer_frank', 'frank@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=frank', 'Freelancer, full-stack independent developer', NOW() - INTERVAL 12 HOUR, NOW() - INTERVAL 6 DAY),
+(10, 'senior_grace', 'grace@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=grace', 'Senior technical architect, 15 years of development experience', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 4 DAY);
 
--- 不活跃用户和测试状态
+-- Inactive users and test statuses
 INSERT INTO users (id, username, email, password_hash, status, email_verified, avatar_url, bio, last_seen_at, created_at) VALUES
-(11, 'inactive_henry', 'henry@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 0, NULL, '测试账户 - 未验证邮箱', NULL, NOW() - INTERVAL 3 DAY),
-(12, 'suspended_user', 'suspended@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'suspended', 1, NULL, '因违规被暂时停用的账户', NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 2 DAY);
+(11, 'inactive_henry', 'henry@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'active', 0, NULL, 'Test account - unverified email', NULL, NOW() - INTERVAL 3 DAY),
+(12, 'suspended_user', 'suspended@example.com', 'u+IPdC4Ogn8BC5Bgfz1auYMCOnjuFtqX1IsBlfHee0Q=:GmwBJNmFNtydcoLxMZg++A==', 'suspended', 1, NULL, 'Account temporarily suspended for violations', NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 2 DAY);
 
 -- =====================================================================
--- 2. 分配用户角色
+-- 2. Assign user roles
 -- =====================================================================
 
 INSERT INTO user_roles (user_id, role) VALUES
--- 管理员
+-- Administrator
 (1, 'admin'),
 (1, 'mod'),
 (1, 'user'),
 
--- 版主
+-- Moderator
 (2, 'mod'),
 (2, 'user'),
 
--- 普通用户
+-- Regular users
 (3, 'user'),
 (4, 'user'),
 (5, 'user'),
@@ -89,139 +89,139 @@ INSERT INTO user_roles (user_id, role) VALUES
 (12, 'user');
 
 -- =====================================================================
--- 3. 分配版主权限（分类管理）
+-- 3. Assign moderator permissions (category management)
 -- =====================================================================
 
 INSERT INTO category_moderators (category_id, user_id) VALUES
--- admin 管理所有分类
+-- admin manages all categories
 (1, 1), (2, 1), (3, 1), (4, 1),
--- moderator 管理技术交流和产品反馈
+-- moderator manages technical discussion and product feedback
 (2, 2), (3, 2);
 
 -- =====================================================================
--- 4. 更新标签使用次数（为后续主题数据做准备）
+-- 4. Update tag usage count (prepare for subsequent topic data)
 -- =====================================================================
 
 UPDATE tags SET usage_count = 0;
 
 -- =====================================================================
--- 5. 创建主题帖子
+-- 5. Create topic posts
 -- =====================================================================
 
--- 技术交流分类的主题
+-- Topics in technical discussion category
 INSERT INTO topics (id, title, slug, author_id, category_id, is_pinned, is_locked, reply_count, view_count, last_posted_at, last_poster_id, created_at, updated_at) VALUES
-(1, '欢迎来到论坛！新手必读指南', 'welcome-guide', 1, 1, 1, 0, 8, 245, NOW() - INTERVAL 2 HOUR, 7, NOW() - INTERVAL 25 DAY, NOW() - INTERVAL 2 HOUR),
-(2, 'React 18 新特性深度解析', 'react-18-features', 3, 2, 1, 0, 12, 156, NOW() - INTERVAL 3 HOUR, 5, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 3 HOUR),
-(3, 'ASP.NET Core 性能优化实践', 'aspnet-core-performance', 4, 2, 0, 0, 15, 189, NOW() - INTERVAL 1 HOUR, 10, NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 1 HOUR),
-(4, 'Docker 容器化部署完整指南', 'docker-deployment-guide', 6, 2, 0, 0, 9, 134, NOW() - INTERVAL 5 HOUR, 3, NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 5 HOUR),
-(5, '前端状态管理库对比分析', 'frontend-state-management', 5, 2, 0, 0, 7, 98, NOW() - INTERVAL 8 HOUR, 9, NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 8 HOUR),
-(6, 'MySQL 索引优化策略', 'mysql-index-optimization', 10, 2, 0, 0, 6, 87, NOW() - INTERVAL 12 HOUR, 4, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 12 HOUR),
-(7, '新手求助：如何开始学习编程？', 'beginner-programming-help', 7, 1, 0, 0, 11, 67, NOW() - INTERVAL 4 HOUR, 8, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 4 HOUR),
-(8, '关于论坛新功能的建议', 'forum-feature-suggestions', 9, 3, 0, 1, 5, 45, NOW() - INTERVAL 2 DAY, 2, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 2 DAY),
-(9, '分享：我的开发工具链配置', 'my-dev-toolchain', 3, 1, 0, 0, 3, 89, NOW() - INTERVAL 1 DAY, 6, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 1 DAY),
-(10, '【已解决】TypeScript 类型推断问题', 'typescript-type-inference', 8, 2, 0, 0, 8, 76, NOW() - INTERVAL 18 HOUR, 3, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 18 HOUR);
+(1, 'Welcome to the Forum! Beginner''s Essential Guide', 'welcome-guide', 1, 1, 1, 0, 8, 245, NOW() - INTERVAL 2 HOUR, 7, NOW() - INTERVAL 25 DAY, NOW() - INTERVAL 2 HOUR),
+(2, 'React 18 New Features Deep Dive', 'react-18-features', 3, 2, 1, 0, 12, 156, NOW() - INTERVAL 3 HOUR, 5, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 3 HOUR),
+(3, 'ASP.NET Core Performance Optimization Practice', 'aspnet-core-performance', 4, 2, 0, 0, 15, 189, NOW() - INTERVAL 1 HOUR, 10, NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 1 HOUR),
+(4, 'Docker Containerization Deployment Complete Guide', 'docker-deployment-guide', 6, 2, 0, 0, 9, 134, NOW() - INTERVAL 5 HOUR, 3, NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 5 HOUR),
+(5, 'Frontend State Management Library Comparison Analysis', 'frontend-state-management', 5, 2, 0, 0, 7, 98, NOW() - INTERVAL 8 HOUR, 9, NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 8 HOUR),
+(6, 'MySQL Index Optimization Strategies', 'mysql-index-optimization', 10, 2, 0, 0, 6, 87, NOW() - INTERVAL 12 HOUR, 4, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 12 HOUR),
+(7, 'Newbie Help: How to Start Learning Programming?', 'beginner-programming-help', 7, 1, 0, 0, 11, 67, NOW() - INTERVAL 4 HOUR, 8, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 4 HOUR),
+(8, 'Suggestions for New Forum Features', 'forum-feature-suggestions', 9, 3, 0, 1, 5, 45, NOW() - INTERVAL 2 DAY, 2, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 2 DAY),
+(9, 'Share: My Development Toolchain Configuration', 'my-dev-toolchain', 3, 1, 0, 0, 3, 89, NOW() - INTERVAL 1 DAY, 6, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 1 DAY),
+(10, '[SOLVED] TypeScript Type Inference Issue', 'typescript-type-inference', 8, 2, 0, 0, 8, 76, NOW() - INTERVAL 18 HOUR, 3, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 18 HOUR);
 
 -- =====================================================================
--- 6. 主题标签关联
+-- 6. Topic-tag associations
 -- =====================================================================
 
 INSERT INTO topic_tags (topic_id, tag_id) VALUES
--- 欢迎指南：讨论
+-- Welcome guide: discussion
 (1, 2),
--- React 18：讨论、分享
+-- React 18: discussion, sharing
 (2, 2), (2, 3),
--- ASP.NET Core：分享
+-- ASP.NET Core: sharing
 (3, 3),
--- Docker指南：分享、讨论
+-- Docker guide: sharing, discussion
 (4, 3), (4, 2),
--- 状态管理：讨论
+-- State management: discussion
 (5, 2),
--- MySQL优化：分享
+-- MySQL optimization: sharing
 (6, 3),
--- 新手求助：问题
+-- Newbie help: question
 (7, 1),
--- 功能建议：建议
+-- Feature suggestions: suggestion
 (8, 4),
--- 工具链：分享
+-- Toolchain: sharing
 (9, 3),
--- TypeScript问题：问题、分享
+-- TypeScript issue: question, sharing
 (10, 1), (10, 3);
 
--- 更新标签使用计数
+-- Update tag usage count
 UPDATE tags SET usage_count = (
   SELECT COUNT(*) FROM topic_tags WHERE topic_tags.tag_id = tags.id
 );
 
 -- =====================================================================
--- 7. 创建帖子内容（首帖和回帖）
+-- 7. Create post content (original posts and replies)
 -- =====================================================================
 
--- 主题 1: 欢迎指南的帖子
+-- Topic 1: Welcome guide posts
 INSERT INTO posts (id, topic_id, author_id, content_md, reply_to_post_id, created_at, updated_at) VALUES
-(1, 1, 1, '# 欢迎来到我们的技术论坛！🎉
+(1, 1, 1, '# Welcome to Our Tech Forum! 🎉
 
-各位开发者朋友们好！
+Hello, fellow developers!
 
-非常欢迎大家加入我们的技术社区。这里是一个专为开发者打造的交流平台，无论你是刚刚入门的新手，还是经验丰富的资深工程师，都能在这里找到属于自己的位置。
+Welcome to our technical community! This is a platform built specifically for developers, whether you''re a beginner just starting out or an experienced senior engineer, you can find your place here.
 
-## 论坛功能介绍
+## Forum Features
 
-- **分类讨论**：我们有不同的技术分类，方便大家找到感兴趣的话题
-- **标签系统**：通过标签快速筛选和定位相关内容  
-- **实时互动**：支持实时回帖和通知，让讨论更加流畅
-- **个人主页**：展示你的技术专长和贡献
+- **Categorized Discussions**: We have different technical categories to help you find topics of interest
+- **Tagging System**: Quickly filter and locate relevant content through tags  
+- **Real-time Interaction**: Support for real-time replies and notifications for smoother discussions
+- **Personal Profiles**: Showcase your technical expertise and contributions
 
-## 发帖规范
+## Posting Guidelines
 
-1. **选择合适的分类**：确保你的帖子发在正确的分类下
-2. **使用恰当的标签**：帮助其他人更容易找到你的内容
-3. **标题要清晰**：让人一眼就能明白你要讨论的内容
-4. **内容要详实**：提供足够的背景信息和具体的问题描述
+1. **Choose the Right Category**: Make sure your post is in the correct category
+2. **Use Appropriate Tags**: Help others find your content more easily
+3. **Clear Titles**: Make it clear what you want to discuss at first glance
+4. **Detailed Content**: Provide sufficient background information and specific problem descriptions
 
-期待大家的积极参与，让我们一起构建一个高质量的技术交流社区！', NULL, NOW() - INTERVAL 25 DAY, NOW() - INTERVAL 25 DAY);
+Looking forward to everyone''s active participation as we build a high-quality technical exchange community together!', NULL, NOW() - INTERVAL 25 DAY, NOW() - INTERVAL 25 DAY);
 
--- 回帖
+-- Replies
 INSERT INTO posts (id, topic_id, author_id, content_md, reply_to_post_id, created_at, updated_at) VALUES
-(2, 1, 3, '感谢管理员的详细介绍！论坛的功能看起来很完善，期待能在这里学到更多东西。', 1, NOW() - INTERVAL 24 DAY, NOW() - INTERVAL 24 DAY),
-(3, 1, 4, '界面设计得很不错，用起来很流畅 👍', 1, NOW() - INTERVAL 23 DAY, NOW() - INTERVAL 23 DAY),
-(4, 1, 5, '特别喜欢实时通知功能，这样讨论起来更有效率！', 1, NOW() - INTERVAL 22 DAY, NOW() - INTERVAL 22 DAY),
-(5, 1, 7, '作为新手，这个指南对我很有帮助。请问有没有推荐的学习路径？', 1, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 20 DAY),
-(6, 1, 2, '@newbie_david 我们会陆续发布一些学习资源，可以关注技术交流分类。', 5, NOW() - INTERVAL 19 DAY, NOW() - INTERVAL 19 DAY),
-(7, 1, 8, '论坛的 Markdown 支持很棒，可以方便地分享代码片段！', 1, NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 18 DAY),
-(8, 1, 6, '希望能看到更多关于 DevOps 和云原生的讨论。', 1, NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 15 DAY),
-(9, 1, 7, '谢谢 @moderator 的回复！我会多关注学习资源的。', 6, NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 2 HOUR);
+(2, 1, 3, 'Thanks for the detailed introduction, admin! The forum features look very comprehensive, looking forward to learning more here.', 1, NOW() - INTERVAL 24 DAY, NOW() - INTERVAL 24 DAY),
+(3, 1, 4, 'The interface design is really nice, very smooth to use 👍', 1, NOW() - INTERVAL 23 DAY, NOW() - INTERVAL 23 DAY),
+(4, 1, 5, 'I especially love the real-time notification feature, it makes discussions much more efficient!', 1, NOW() - INTERVAL 22 DAY, NOW() - INTERVAL 22 DAY),
+(5, 1, 7, 'As a newbie, this guide is very helpful to me. Are there any recommended learning paths?', 1, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 20 DAY),
+(6, 1, 2, '@newbie_david We will gradually publish some learning resources, please follow the technical discussion category.', 5, NOW() - INTERVAL 19 DAY, NOW() - INTERVAL 19 DAY),
+(7, 1, 8, 'The forum''s Markdown support is great, makes it easy to share code snippets!', 1, NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 18 DAY),
+(8, 1, 6, 'Hope to see more discussions about DevOps and cloud-native technologies.', 1, NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 15 DAY),
+(9, 1, 7, 'Thanks @moderator for the reply! I will pay more attention to learning resources.', 6, NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 2 HOUR);
 
--- 主题 2: React 18 的帖子
+-- Topic 2: React 18 posts
 INSERT INTO posts (id, topic_id, author_id, content_md, reply_to_post_id, created_at, updated_at) VALUES
-(10, 2, 3, '# React 18 新特性深度解析
+(10, 2, 3, '# React 18 New Features Deep Dive
 
-React 18 带来了许多令人兴奋的新特性，今天我想和大家分享一下我的使用体验。
+React 18 brings many exciting new features, and today I want to share my experience using them.
 
-## 主要新特性
+## Major New Features
 
 ### 1. Concurrent Features
-React 18 引入了并发特性，这是最大的变化：
+React 18 introduces concurrent features, which is the biggest change:
 
 ```jsx
-// 新的 createRoot API
+// New createRoot API
 import { createRoot } from ''react-dom/client'';
 const root = createRoot(container);
 root.render(<App />);
 ```
 
 ### 2. Automatic Batching
-现在所有的状态更新都会自动批处理：
+Now all state updates are automatically batched:
 
 ```jsx
-// React 18 中，这些更新会被自动批处理
+// In React 18, these updates will be automatically batched
 setTimeout(() => {
   setCount(c => c + 1);
   setFlag(f => !f);
 }, 1000);
 ```
 
-### 3. Suspense 改进
-Suspense 现在支持更多场景，包括数据获取：
+### 3. Suspense Improvements
+Suspense now supports more scenarios, including data fetching:
 
 ```jsx
 <Suspense fallback={<Loading />}>
@@ -229,59 +229,59 @@ Suspense 现在支持更多场景，包括数据获取：
 </Suspense>
 ```
 
-## 升级建议
+## Upgrade Recommendations
 
-1. **逐步迁移**：不需要一次性重写所有代码
-2. **测试充分**：新的并发特性可能影响组件行为
-3. **关注性能**：利用新特性优化用户体验
+1. **Gradual Migration**: No need to rewrite all code at once
+2. **Thorough Testing**: New concurrent features may affect component behavior
+3. **Focus on Performance**: Leverage new features to optimize user experience
 
-大家在升级过程中遇到什么问题吗？', NULL, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 20 DAY);
+What issues have you encountered during the upgrade process?', NULL, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 20 DAY);
 
 INSERT INTO posts (id, topic_id, author_id, content_md, reply_to_post_id, created_at, updated_at) VALUES
-(11, 2, 5, '非常详细的总结！我在项目中已经开始使用 React 18 了，Automatic Batching 确实提升了性能。
+(11, 2, 5, 'Very detailed summary! I''ve started using React 18 in my project, and Automatic Batching really improves performance.
 
-不过要注意一个问题，如果你的代码依赖于同步的状态更新，可能需要调整：
+However, there''s one thing to note: if your code relies on synchronous state updates, you might need to make adjustments:
 
 ```jsx
-// 如果需要强制同步更新，可以使用 flushSync
+// If you need to force synchronous updates, you can use flushSync
 import { flushSync } from ''react-dom'';
 
 flushSync(() => {
   setCount(count + 1);
 });
 ```', 10, NOW() - INTERVAL 19 DAY, NOW() - INTERVAL 19 DAY),
-(12, 2, 4, '我们团队还在评估升级的风险。@developer_jane 你们在升级过程中遇到了什么兼容性问题吗？', 10, NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 18 DAY),
-(13, 2, 3, '@backend_bob 总体来说兼容性很好，主要是一些第三方库可能需要更新。建议先在测试环境试试。
+(12, 2, 4, 'Our team is still evaluating the upgrade risks. @developer_jane What compatibility issues did you encounter during the upgrade?', 10, NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 18 DAY),
+(13, 2, 3, '@backend_bob Overall compatibility is very good, mainly some third-party libraries might need updates. I suggest trying it in a test environment first.
 
-另外，StrictMode 在开发环境下会更严格，可能会发现一些之前隐藏的问题。', 12, NOW() - INTERVAL 17 DAY, NOW() - INTERVAL 17 DAY),
-(14, 2, 7, '作为新手问一下，React 18 对学习曲线有什么影响吗？是否建议直接从 18 开始学？', 10, NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 15 DAY),
-(15, 2, 10, '@newbie_david 建议直接学 React 18，新的特性设计得更加直观，而且是未来的趋势。', 14, NOW() - INTERVAL 14 DAY, NOW() - INTERVAL 14 DAY),
-(16, 2, 9, 'Concurrent Features 确实很强大，特别是对于复杂应用的性能优化很有帮助。', 10, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 10 DAY),
-(17, 2, 6, '我们在生产环境使用了几个月，稳定性很好。推荐大家升级！', 10, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 8 DAY),
-(18, 2, 8, '期待更多关于 React 18 性能优化的实战案例分享！', 10, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 6 DAY),
-(19, 2, 5, '@student_emma 我准备写一篇关于 React 18 性能优化的详细文章，敬请期待！', 18, NOW() - INTERVAL 3 HOUR, NOW() - INTERVAL 3 HOUR);
+Also, StrictMode is stricter in development environment, which might reveal some previously hidden issues.', 12, NOW() - INTERVAL 17 DAY, NOW() - INTERVAL 17 DAY),
+(14, 2, 7, 'As a newbie, I''d like to ask: what impact does React 18 have on the learning curve? Should I start learning directly from version 18?', 10, NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 15 DAY),
+(15, 2, 10, '@newbie_david I suggest learning React 18 directly, the new features are designed more intuitively and it''s the future trend.', 14, NOW() - INTERVAL 14 DAY, NOW() - INTERVAL 14 DAY),
+(16, 2, 9, 'Concurrent Features are indeed very powerful, especially helpful for performance optimization of complex applications.', 10, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 10 DAY),
+(17, 2, 6, 'We''ve been using it in production for several months, stability is great. Recommend everyone to upgrade!', 10, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 8 DAY),
+(18, 2, 8, 'Looking forward to more practical case studies on React 18 performance optimization!', 10, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 6 DAY),
+(19, 2, 5, '@student_emma I''m planning to write a detailed article about React 18 performance optimization, stay tuned!', 18, NOW() - INTERVAL 3 HOUR, NOW() - INTERVAL 3 HOUR);
 
--- 主题 3: ASP.NET Core 性能优化
+-- Topic 3: ASP.NET Core performance optimization
 INSERT INTO posts (id, topic_id, author_id, content_md, reply_to_post_id, created_at, updated_at) VALUES
-(20, 3, 4, '# ASP.NET Core 性能优化实践分享
+(20, 3, 4, '# ASP.NET Core Performance Optimization Practice Sharing
 
-最近在项目中进行了一轮性能优化，想和大家分享一些实用的经验。
+Recently conducted a round of performance optimization in our project, and I want to share some practical experiences with everyone.
 
-## 数据库优化
+## Database Optimization
 
-### 1. 使用 Dapper 替代 EF Core
-在高性能场景下，Dapper 的表现确实更好：
+### 1. Using Dapper Instead of EF Core
+In high-performance scenarios, Dapper indeed performs better:
 
 ```csharp
-// Dapper 查询示例
+// Dapper query example
 var users = await connection.QueryAsync<User>(
     "SELECT * FROM users WHERE status = @status",
     new { status = "active" });
 ```
 
-### 2. 连接池优化
+### 2. Connection Pool Optimization
 ```csharp
-// 配置连接池
+// Configure connection pool
 services.AddScoped<IDbConnectionFactory>(_ => 
     new MySqlConnectionFactory(connectionString, new MySqlConnectionPoolSettings
     {
@@ -291,7 +291,7 @@ services.AddScoped<IDbConnectionFactory>(_ =>
     }));
 ```
 
-## 缓存策略
+## Caching Strategy
 
 ### 1. Memory Cache
 ```csharp
@@ -311,235 +311,235 @@ services.AddStackExchangeRedisCache(options =>
 });
 ```
 
-## API 性能优化
+## API Performance Optimization
 
 ### 1. Response Caching
 ```csharp
 [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "categoryId" })]
 public async Task<IActionResult> GetTopics(int categoryId)
 {
-    // 实现逻辑
+    // Implementation logic
 }
 ```
 
-### 2. 异步编程最佳实践
+### 2. Async Programming Best Practices
 ```csharp
-// 避免阻塞调用
+// Avoid blocking calls
 public async Task<List<Topic>> GetTopicsAsync()
 {
     return await _repository.GetTopicsAsync().ConfigureAwait(false);
 }
 ```
 
-通过这些优化，我们的 API 响应时间从平均 300ms 降到了 50ms 以下！', NULL, NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 18 DAY);
+Through these optimizations, our API response time dropped from an average of 300ms to below 50ms!', NULL, NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 18 DAY);
 
--- 继续添加更多回帖...
+-- Continue adding more replies...
 INSERT INTO posts (id, topic_id, author_id, content_md, reply_to_post_id, created_at, updated_at) VALUES
-(21, 3, 10, '非常实用的分享！我们也在考虑从 EF Core 迁移到 Dapper，性能提升确实很明显。
+(21, 3, 10, 'Very practical sharing! We are also considering migrating from EF Core to Dapper, the performance improvement is indeed obvious.
 
-补充一个小技巧，在使用 Dapper 时可以考虑使用 `QueryFirstOrDefaultAsync` 来避免不必要的内存分配：
+Here''s a small tip: when using Dapper, consider using `QueryFirstOrDefaultAsync` to avoid unnecessary memory allocation:
 
 ```csharp
 var user = await connection.QueryFirstOrDefaultAsync<User>(
     "SELECT * FROM users WHERE id = @id", 
     new { id });
 ```', 20, NOW() - INTERVAL 17 DAY, NOW() - INTERVAL 17 DAY),
-(22, 3, 6, '关于缓存策略，我建议还要考虑缓存穿透和缓存雪崩的问题。可以使用布隆过滤器或者设置随机的过期时间。', 20, NOW() - INTERVAL 16 DAY, NOW() - INTERVAL 16 DAY),
-(23, 3, 3, '@backend_bob 你们有没有做过压力测试？想了解一下具体的 QPS 提升数据。', 20, NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 15 DAY),
-(24, 3, 4, '@developer_jane 我们的压测结果：优化前 QPS 约 500，优化后能达到 2000+，延迟也从 P95 300ms 降到了 P95 80ms。', 23, NOW() - INTERVAL 14 DAY, NOW() - INTERVAL 14 DAY),
-(25, 3, 8, '学到了很多！请问在微服务架构下，这些优化策略需要做哪些调整？', 20, NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 12 DAY),
-(26, 3, 4, '@student_emma 微服务下主要关注服务间通信的优化，比如使用 HTTP/2、gRPC，还有熔断器模式等。', 25, NOW() - INTERVAL 11 DAY, NOW() - INTERVAL 11 DAY),
-(27, 3, 5, '想补充一点关于前端的优化：配合后端的 Response Caching，前端也要做好缓存策略，比如使用 ETags。', 20, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 8 DAY),
-(28, 3, 9, '这个分享太有价值了！我们项目正好遇到性能瓶颈，准备按照这个思路优化。', 20, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 6 DAY),
-(29, 3, 10, '有计划写一个完整的性能优化系列文章吗？这种实战经验分享对大家都很有帮助。', 20, NOW() - INTERVAL 1 HOUR, NOW() - INTERVAL 1 HOUR);
+(22, 3, 6, 'Regarding caching strategies, I suggest also considering cache penetration and cache avalanche issues. You can use bloom filters or set random expiration times.', 20, NOW() - INTERVAL 16 DAY, NOW() - INTERVAL 16 DAY),
+(23, 3, 3, '@backend_bob Have you done any stress testing? I''d like to know the specific QPS improvement data.', 20, NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 15 DAY),
+(24, 3, 4, '@developer_jane Our stress test results: QPS was about 500 before optimization, now it can reach 2000+, and latency dropped from P95 300ms to P95 80ms.', 23, NOW() - INTERVAL 14 DAY, NOW() - INTERVAL 14 DAY),
+(25, 3, 8, 'Learned so much! May I ask what adjustments these optimization strategies need under microservices architecture?', 20, NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 12 DAY),
+(26, 3, 4, '@student_emma Under microservices, focus mainly on inter-service communication optimization, such as using HTTP/2, gRPC, and circuit breaker patterns.', 25, NOW() - INTERVAL 11 DAY, NOW() - INTERVAL 11 DAY),
+(27, 3, 5, 'I''d like to add something about frontend optimization: working with backend Response Caching, the frontend should also implement good caching strategies, such as using ETags.', 20, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 8 DAY),
+(28, 3, 9, 'This sharing is so valuable! Our project is facing performance bottlenecks, and we''re planning to optimize according to this approach.', 20, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 6 DAY),
+(29, 3, 10, 'Do you have plans to write a complete performance optimization series? This kind of practical experience sharing is very helpful for everyone.', 20, NOW() - INTERVAL 1 HOUR, NOW() - INTERVAL 1 HOUR);
 
--- 主题 7: 新手求助帖子
+-- Topic 7: Newbie help posts
 INSERT INTO posts (id, topic_id, author_id, content_md, reply_to_post_id, created_at, updated_at) VALUES
-(30, 7, 7, '# 新手求助：如何开始学习编程？
+(30, 7, 7, '# Newbie Help: How to Start Learning Programming?
 
-大家好！我是编程完全零基础的新手，最近想开始学习Web开发，但是面对这么多技术栈感到有些迷茫。
+Hello everyone! I''m a complete beginner with zero programming experience, and I recently want to start learning web development, but I feel a bit overwhelmed facing so many tech stacks.
 
-## 我的情况
-- 完全没有编程经验
-- 对网站和应用开发比较感兴趣  
-- 数学基础一般，但学习能力还可以
-- 每天能投入 2-3 小时学习时间
+## My Situation
+- Completely no programming experience
+- Quite interested in website and application development  
+- Average math foundation, but decent learning ability
+- Can dedicate 2-3 hours per day for learning
 
-## 我的疑问
-1. **应该从哪门语言开始？** JavaScript、Python 还是其他？
-2. **学习路径该怎么规划？** 前端先学还是后端先学？
-3. **有什么好的学习资源推荐？** 
-4. **如何判断自己的学习进度？**
-5. **什么时候可以开始做项目？**
+## My Questions
+1. **Which language should I start with?** JavaScript, Python, or others?
+2. **How should I plan my learning path?** Should I learn frontend first or backend first?
+3. **Any good learning resources to recommend?** 
+4. **How to judge my learning progress?**
+5. **When can I start doing projects?**
 
-希望各位前辈能给一些建议，谢谢大家！🙏', NULL, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 8 DAY);
+Hope the seniors can give some advice, thank you all! 🙏', NULL, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 8 DAY);
 
 INSERT INTO posts (id, topic_id, author_id, content_md, reply_to_post_id, created_at, updated_at) VALUES
-(31, 7, 3, '欢迎加入编程的世界！@newbie_david 
+(31, 7, 3, 'Welcome to the programming world! @newbie_david 
 
-作为过来人，我建议：
+As someone who''s been through this, I suggest:
 
-## 学习路径建议
-1. **从前端开始**：HTML → CSS → JavaScript，因为能看到直观的效果，有成就感
-2. **循序渐进**：不要急于求成，把基础打牢
-3. **边学边做**：理论+实践，每学一个概念就动手试试
+## Learning Path Recommendations
+1. **Start with Frontend**: HTML → CSS → JavaScript, because you can see intuitive results and feel accomplished
+2. **Step by Step**: Don''t rush, build a solid foundation
+3. **Learn by Doing**: Theory + practice, try hands-on for every concept you learn
 
-## 推荐资源
-- **MDN Web Docs**：权威的Web技术文档
-- **freeCodeCamp**：免费的交互式课程
-- **YouTube**：有很多优质的编程教程
+## Recommended Resources
+- **MDN Web Docs**: Authoritative web technology documentation
+- **freeCodeCamp**: Free interactive courses
+- **YouTube**: Many quality programming tutorials
 
-建议先花1个月学HTML/CSS，再花2个月学JavaScript基础。有问题随时问！', 30, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 7 DAY),
-(32, 7, 10, '@newbie_david 我也是从零开始学的！分享几个经验：
+I suggest spending 1 month learning HTML/CSS first, then 2 months on JavaScript basics. Feel free to ask questions anytime!', 30, NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 7 DAY),
+(32, 7, 10, '@newbie_david I also started from zero! Sharing some experiences:
 
-## 学习心得
-1. **不要追求完美**：先做出来，再优化
-2. **做笔记很重要**：记录学习过程和问题
-3. **加入社区**：多和其他开发者交流
+## Learning Insights
+1. **Don''t pursue perfection**: Get it working first, then optimize
+2. **Taking notes is important**: Record your learning process and problems
+3. **Join communities**: Communicate more with other developers
 
-## 项目建议
-- 第1个月：静态网页（个人简历）
-- 第2-3月：交互式网页（计算器、待办事项）
-- 第4-6月：完整的小项目
+## Project Suggestions
+- Month 1: Static web pages (personal resume)
+- Months 2-3: Interactive web pages (calculator, todo list)
+- Months 4-6: Complete small projects
 
-编程是个马拉松，保持耐心和热情最重要！💪', 30, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 6 DAY),
-(33, 7, 2, '作为版主，我整理了一个新手学习路线图，大家可以参考：
+Programming is a marathon, patience and passion are most important! 💪', 30, NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 6 DAY),
+(33, 7, 2, 'As a moderator, I''ve compiled a beginner learning roadmap for everyone to reference:
 
-## 阶段1：Web基础（1-2月）
-- HTML5 语义化标签
-- CSS3 布局和动画
-- JavaScript ES6+ 基础
+## Phase 1: Web Fundamentals (1-2 months)
+- HTML5 semantic tags
+- CSS3 layout and animations
+- JavaScript ES6+ basics
 
-## 阶段2：前端框架（2-3月）  
-- 选择一个框架深入学习（推荐React或Vue）
-- 状态管理和路由
+## Phase 2: Frontend Frameworks (2-3 months)  
+- Choose one framework to study deeply (recommend React or Vue)
+- State management and routing
 
-## 阶段3：后端入门（3-4月）
-- Node.js + Express 或者其他后端语言
-- 数据库基础（MySQL/MongoDB）
+## Phase 3: Backend Introduction (3-4 months)
+- Node.js + Express or other backend languages
+- Database fundamentals (MySQL/MongoDB)
 
-## 阶段4：项目实战（持续）
-- 完整的全栈项目
-- 部署和运维基础
+## Phase 4: Project Practice (ongoing)
+- Complete full-stack projects
+- Deployment and DevOps basics
 
-学习编程最重要的是**持续性**，每天进步一点点！', 30, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 5 DAY),
-(34, 7, 5, '@newbie_david 从设计师转前端的角度给你一些建议：
+The most important thing in learning programming is **consistency**, improve a little bit every day!', 30, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 5 DAY),
+(34, 7, 5, '@newbie_david From a designer-to-frontend perspective, here are some suggestions:
 
-## 学习方法
-1. **视觉化学习**：多看优秀的网站设计，分析实现方法
-2. **工具使用**：熟悉浏览器开发者工具
-3. **设计+代码**：学会从设计稿到代码的转换
+## Learning Methods
+1. **Visual Learning**: Look at excellent website designs and analyze implementation methods
+2. **Tool Usage**: Get familiar with browser developer tools
+3. **Design + Code**: Learn to convert from design mockups to code
 
-推荐先做几个漂亮的静态页面，培养审美和代码感觉！', 30, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 4 DAY),
-(35, 7, 8, '我现在也在学习中，我们可以互相鼓励！最近在学JavaScript，确实有点难度但很有意思。
+I recommend creating several beautiful static pages first to develop aesthetic sense and coding intuition!', 30, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 4 DAY),
+(35, 7, 8, 'I''m also currently learning, we can encourage each other! I''ve been studying JavaScript recently, it''s indeed challenging but very interesting.
 
-@newbie_david 要不我们建个学习小组？', 30, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 3 DAY),
-(36, 7, 7, '感谢大家的热心回复！@developer_jane @senior_grace @moderator @frontend_alice @student_emma 
+@newbie_david How about we create a study group?', 30, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 3 DAY),
+(36, 7, 7, 'Thank you all for the enthusiastic replies! @developer_jane @senior_grace @moderator @frontend_alice @student_emma 
 
-我已经开始按照大家的建议学习HTML了，确实很有成就感！@student_emma 建学习小组的想法很好，我们可以私聊讨论一下。
+I''ve started learning HTML according to everyone''s suggestions, and it''s indeed very rewarding! @student_emma The study group idea is great, we can discuss it privately.
 
-再次感谢各位前辈的指导！🙏', 31, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY),
-(37, 7, 6, '看到这么多热心的回复真的很感动！这就是技术社区的魅力。
+Thanks again for all the seniors'' guidance! 🙏', 31, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY),
+(37, 7, 6, 'Seeing so many enthusiastic replies is really touching! This is the charm of the tech community.
 
-@newbie_david 如果将来想学DevOps相关的知识，也欢迎来找我交流！', 30, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY),
-(38, 7, 9, '这个帖子对我也很有启发！虽然我已经工作了，但看到新手的学习热情，让我想起了刚开始学编程的时候。
+@newbie_david If you want to learn DevOps-related knowledge in the future, feel free to come and chat with me!', 30, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY),
+(38, 7, 9, 'This post is very inspiring to me too! Although I''m already working, seeing the enthusiasm of newcomers reminds me of when I first started learning programming.
 
-学习永无止境，大家一起加油！🚀', 30, NOW() - INTERVAL 18 HOUR, NOW() - INTERVAL 18 HOUR),
-(39, 7, 1, '看到大家的互动很暖心！这就是我们希望营造的社区氛围。
+Learning never ends, let''s all keep going together! 🚀', 30, NOW() - INTERVAL 18 HOUR, NOW() - INTERVAL 18 HOUR),
+(39, 7, 1, 'Seeing everyone''s interaction is so heartwarming! This is exactly the community atmosphere we hope to create.
 
-我会整理一个新手资源合集发到公告区，敬请期待！', 30, NOW() - INTERVAL 12 HOUR, NOW() - INTERVAL 12 HOUR),
-(40, 7, 8, '太好了！期待管理员的资源合集。学习路上有大家陪伴真的很幸福～', 39, NOW() - INTERVAL 4 HOUR, NOW() - INTERVAL 4 HOUR);
+I will compile a beginner resource collection and post it in the announcements section, stay tuned!', 30, NOW() - INTERVAL 12 HOUR, NOW() - INTERVAL 12 HOUR),
+(40, 7, 8, 'Excellent! Looking forward to the admin''s resource collection. Having everyone''s company on the learning journey is truly wonderful~', 39, NOW() - INTERVAL 4 HOUR, NOW() - INTERVAL 4 HOUR);
 
 -- =====================================================================
--- 8. 处理提及关系
+-- 8. Handle mention relationships
 -- =====================================================================
 
 INSERT INTO post_mentions (post_id, mentioned_user_id) VALUES
--- 帖子中的@提及
-(6, 7),   -- moderator 提及 newbie_david
-(9, 2),   -- newbie_david 提及 moderator  
-(12, 3),  -- backend_bob 提及 developer_jane
-(13, 4),  -- developer_jane 提及 backend_bob
-(14, 7),  -- newbie_david 被提及
-(15, 7),  -- senior_grace 提及 newbie_david
-(19, 8),  -- frontend_alice 提及 student_emma
-(23, 4),  -- developer_jane 提及 backend_bob
-(24, 3),  -- backend_bob 提及 developer_jane
-(25, 8),  -- student_emma 被提及
-(26, 8),  -- backend_bob 提及 student_emma
-(31, 7),  -- developer_jane 提及 newbie_david
-(32, 7),  -- senior_grace 提及 newbie_david
-(34, 7),  -- frontend_alice 提及 newbie_david
-(35, 7),  -- student_emma 提及 newbie_david
-(36, 3),  -- newbie_david 提及多人
+-- @ mentions in posts
+(6, 7),   -- moderator mentions newbie_david
+(9, 2),   -- newbie_david mentions moderator  
+(12, 3),  -- backend_bob mentions developer_jane
+(13, 4),  -- developer_jane mentions backend_bob
+(14, 7),  -- newbie_david is mentioned
+(15, 7),  -- senior_grace mentions newbie_david
+(19, 8),  -- frontend_alice mentions student_emma
+(23, 4),  -- developer_jane mentions backend_bob
+(24, 3),  -- backend_bob mentions developer_jane
+(25, 8),  -- student_emma is mentioned
+(26, 8),  -- backend_bob mentions student_emma
+(31, 7),  -- developer_jane mentions newbie_david
+(32, 7),  -- senior_grace mentions newbie_david
+(34, 7),  -- frontend_alice mentions newbie_david
+(35, 7),  -- student_emma mentions newbie_david
+(36, 3),  -- newbie_david mentions multiple people
 (36, 10), 
 (36, 2), 
 (36, 5), 
 (36, 8),
-(37, 7),  -- devops_charlie 提及 newbie_david
-(39, 30); -- admin 在最后的回复中
+(37, 7),  -- devops_charlie mentions newbie_david
+(39, 30); -- admin in the final reply
 
 -- =====================================================================
--- 9. 更新主题统计数据
+-- 9. Update topic statistics
 -- =====================================================================
 
--- 更新主题的回帖数和最后发帖时间
+-- Update topic reply count and last post time
 UPDATE topics t SET 
   reply_count = (SELECT COUNT(*) - 1 FROM posts p WHERE p.topic_id = t.id AND p.is_deleted = 0),
   last_posted_at = (SELECT MAX(p.created_at) FROM posts p WHERE p.topic_id = t.id AND p.is_deleted = 0),
   last_poster_id = (SELECT p.author_id FROM posts p WHERE p.topic_id = t.id AND p.is_deleted = 0 ORDER BY p.created_at DESC LIMIT 1);
 
 -- =====================================================================
--- 10. 增加更多测试主题（简化版）
+-- 10. Add more test topics (simplified version)
 -- =====================================================================
 
 INSERT INTO topics (title, slug, author_id, category_id, is_pinned, is_locked, reply_count, view_count, last_posted_at, last_poster_id, created_at, updated_at) VALUES
-('微服务架构最佳实践', 'microservices-best-practices', 6, 2, 0, 0, 0, 23, NULL, NULL, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY),
-('Vue 3 Composition API 使用心得', 'vue3-composition-api', 5, 2, 0, 0, 0, 34, NULL, NULL, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY),
-('数据库设计原则讨论', 'database-design-principles', 10, 2, 0, 0, 0, 45, NULL, NULL, NOW() - INTERVAL 18 HOUR, NOW() - INTERVAL 18 HOUR),
-('GitHub Actions CI/CD 配置分享', 'github-actions-cicd', 6, 2, 0, 0, 0, 67, NULL, NULL, NOW() - INTERVAL 12 HOUR, NOW() - INTERVAL 12 HOUR),
-('移动端响应式设计技巧', 'mobile-responsive-design', 5, 2, 0, 0, 0, 89, NULL, NULL, NOW() - INTERVAL 6 HOUR, NOW() - INTERVAL 6 HOUR);
+('Microservices Architecture Best Practices', 'microservices-best-practices', 6, 2, 0, 0, 0, 23, NULL, NULL, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY),
+('Vue 3 Composition API Usage Experience', 'vue3-composition-api', 5, 2, 0, 0, 0, 34, NULL, NULL, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY),
+('Database Design Principles Discussion', 'database-design-principles', 10, 2, 0, 0, 0, 45, NULL, NULL, NOW() - INTERVAL 18 HOUR, NOW() - INTERVAL 18 HOUR),
+('GitHub Actions CI/CD Configuration Sharing', 'github-actions-cicd', 6, 2, 0, 0, 0, 67, NULL, NULL, NOW() - INTERVAL 12 HOUR, NOW() - INTERVAL 12 HOUR),
+('Mobile Responsive Design Tips', 'mobile-responsive-design', 5, 2, 0, 0, 0, 89, NULL, NULL, NOW() - INTERVAL 6 HOUR, NOW() - INTERVAL 6 HOUR);
 
--- 为新主题创建首帖
+-- Create initial posts for new topics
 INSERT INTO posts (topic_id, author_id, content_md, created_at, updated_at) VALUES
-(11, 6, '# 微服务架构最佳实践
+(11, 6, '# Microservices Architecture Best Practices
 
-在实施微服务架构时，有一些关键的原则和实践...', NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY),
-(12, 5, '# Vue 3 Composition API 使用心得
+When implementing microservices architecture, there are some key principles and practices...', NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY),
+(12, 5, '# Vue 3 Composition API Usage Experience
 
-从 Options API 迁移到 Composition API 的经验分享...', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY),
-(13, 10, '# 数据库设计原则讨论
+Experience sharing from migrating from Options API to Composition API...', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY),
+(13, 10, '# Database Design Principles Discussion
 
-好的数据库设计是系统成功的基础，让我们讨论一下...', NOW() - INTERVAL 18 HOUR, NOW() - INTERVAL 18 HOUR),
-(14, 6, '# GitHub Actions CI/CD 配置分享
+Good database design is the foundation of system success, let''s discuss...', NOW() - INTERVAL 18 HOUR, NOW() - INTERVAL 18 HOUR),
+(14, 6, '# GitHub Actions CI/CD Configuration Sharing
 
-分享一套完整的前后端项目CI/CD配置...', NOW() - INTERVAL 12 HOUR, NOW() - INTERVAL 12 HOUR),
-(15, 5, '# 移动端响应式设计技巧
+Sharing a complete CI/CD configuration for frontend and backend projects...', NOW() - INTERVAL 12 HOUR, NOW() - INTERVAL 12 HOUR),
+(15, 5, '# Mobile Responsive Design Tips
 
-移动优先的响应式设计实践经验...', NOW() - INTERVAL 6 HOUR, NOW() - INTERVAL 6 HOUR);
+Mobile-first responsive design practical experience...', NOW() - INTERVAL 6 HOUR, NOW() - INTERVAL 6 HOUR);
 
--- 为一些新主题添加标签
+-- Add tags for some new topics
 INSERT INTO topic_tags (topic_id, tag_id) VALUES
-(11, 2), (11, 3),  -- 微服务：讨论、分享
-(12, 3),           -- Vue3：分享  
-(13, 2),           -- 数据库：讨论
-(14, 3),           -- CI/CD：分享
-(15, 3);           -- 响应式：分享
+(11, 2), (11, 3),  -- Microservices: discussion, sharing
+(12, 3),           -- Vue3: sharing  
+(13, 2),           -- Database: discussion
+(14, 3),           -- CI/CD: sharing
+(15, 3);           -- Responsive: sharing
 
--- 更新标签使用计数
+-- Update tag usage count
 UPDATE tags SET usage_count = (
   SELECT COUNT(*) FROM topic_tags WHERE topic_tags.tag_id = tags.id
 );
 
 -- =====================================================================
--- 11. 创建一些邮箱验证令牌（测试用）
+-- 11. Create some email verification tokens (for testing)
 -- =====================================================================
 
 INSERT INTO email_verification_tokens (user_id, token, expires_at, created_at) VALUES
 (11, 'verify_token_henry_' || UNIX_TIMESTAMP(), NOW() + INTERVAL 24 HOUR, NOW());
 
 -- =====================================================================
--- 12. 提交事务
+-- 12. Commit transaction
 -- =====================================================================
 
 COMMIT;
@@ -547,7 +547,7 @@ SET AUTOCOMMIT = 1;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================================
--- 验证数据插入结果
+-- Verify data insertion results
 -- =====================================================================
 
 SELECT 'Users created:' as Info, COUNT(*) as Count FROM users
@@ -563,9 +563,9 @@ UNION ALL
 SELECT 'Post mentions:' as Info, COUNT(*) as Count FROM post_mentions;
 
 -- =====================================================================
--- 脚本执行完成
+-- Script execution completed
 -- =====================================================================
 
-SELECT '🎉 测试数据插入完成！' as Status;
-SELECT '📊 数据统计：12个用户，15个主题，45个帖子' as Summary;
-SELECT '🔗 包含完整的关联关系：用户角色、主题标签、帖子引用、用户提及' as Features;
+SELECT '🎉 Test data insertion completed!' as Status;
+SELECT '📊 Data statistics: 12 users, 15 topics, 45 posts' as Summary;
+SELECT '🔗 Includes complete relationships: user roles, topic tags, post references, user mentions' as Features;

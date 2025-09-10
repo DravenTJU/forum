@@ -1,26 +1,8 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { ChevronUp, ChevronDown, MessageSquare, Eye, Clock } from 'lucide-react';
+import { ChevronUp, ChevronDown, MessageSquare, Eye, Pin, Lock, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Topic } from '@/types/api';
 
@@ -30,6 +12,8 @@ interface TopicsTableProps {
   onTopicSelect: (topicId: string, selected: boolean) => void;
   onSelectAll: (selected: boolean) => void;
   onSort: (field: 'title' | 'author' | 'lastReply' | 'replies') => void;
+  sortField?: 'title' | 'author' | 'lastReply' | 'replies' | null;
+  sortDirection?: 'asc' | 'desc';
   rowsPerPage: number;
   onRowsPerPageChange: (rows: number) => void;
   totalPages: number;
@@ -45,6 +29,8 @@ const TopicsTable = ({
   onTopicSelect,
   onSelectAll,
   onSort,
+  sortField,
+  sortDirection = 'asc',
   rowsPerPage,
   onRowsPerPageChange,
   totalPages,
@@ -53,33 +39,26 @@ const TopicsTable = ({
   totalRows,
   isLoading = false
 }: TopicsTableProps) => {
-  const [sortConfig, setSortConfig] = useState<{
-    field: string;
-    direction: 'asc' | 'desc';
-  } | null>(null);
-
   const handleSort = (field: 'title' | 'author' | 'lastReply' | 'replies') => {
-    const direction = 
-      sortConfig?.field === field && sortConfig.direction === 'asc' 
-        ? 'desc' 
-        : 'asc';
-    
-    setSortConfig({ field, direction });
     onSort(field);
   };
 
   const getSortIcon = (field: string) => {
-    if (sortConfig?.field !== field) return null;
-    return sortConfig.direction === 'asc' 
-      ? <ChevronUp className="w-4 h-4 inline ml-1" />
-      : <ChevronDown className="w-4 h-4 inline ml-1" />;
+    if (sortField !== field) {
+      return <ChevronUp className="w-4 h-4 ml-1 opacity-30 flex-shrink-0" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ChevronUp className="w-4 h-4 ml-1 text-blue-600 flex-shrink-0" />
+      : <ChevronDown className="w-4 h-4 ml-1 text-blue-600 flex-shrink-0" />;
   };
 
   const formatDate = (dateString: string) => {
     try {
-      return formatDistanceToNow(new Date(dateString), {
-        addSuffix: true,
-        locale: zhCN,
+      const date = new Date(dateString);
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
       });
     } catch {
       return dateString;
@@ -96,238 +75,264 @@ const TopicsTable = ({
   const allSelected = topics.length > 0 && selectedTopics.length === topics.length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {totalRows > 0 && (
-            <>
-              显示 {Math.min((currentPage - 1) * rowsPerPage + 1, totalRows)} 到{' '}
-              {Math.min(currentPage * rowsPerPage, totalRows)} 条，共 {totalRows} 条记录
-            </>
+    <div className="content-stretch flex flex-col items-start justify-between relative size-full">
+      {/* Table */}
+      <div className="bg-white content-stretch flex flex-col items-start justify-start relative shrink-0 w-full border border-zinc-200 rounded-lg">
+        {/* Header Row */}
+        <div className="content-stretch flex h-12 items-center justify-start relative shrink-0 w-full border-b border-zinc-200">
+          {/* Checkbox Column */}
+          <div className="box-border content-stretch flex h-12 items-center justify-start px-4 py-0 relative shrink-0">
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={(checked) => onSelectAll(!!checked)}
+              className="size-4"
+            />
+          </div>
+          
+          {/* Category Column */}
+          <div className="box-border content-stretch flex gap-2 h-12 items-center justify-start px-4 py-0 relative shrink-0">
+            <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-zinc-500">
+              <p className="leading-[20px] whitespace-pre">Category</p>
+            </div>
+          </div>
+          
+          {/* Title Column */}
+          <div 
+            className={`basis-0 box-border content-stretch flex items-center justify-start min-h-px min-w-px px-4 py-0 relative grow h-12 shrink-0 cursor-pointer hover:bg-zinc-50 ${sortField === 'title' ? 'bg-zinc-50' : ''}`}
+            onClick={() => handleSort('title')}
+          >
+            <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap ${sortField === 'title' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
+              <p className="leading-[20px] whitespace-pre">Title</p>
+            </div>
+            {getSortIcon('title')}
+          </div>
+          
+          {/* Author Column */}
+          <div 
+            className={`box-border content-stretch flex items-center justify-start px-4 py-0 relative h-12 shrink-0 w-[118px] cursor-pointer hover:bg-zinc-50 ${sortField === 'author' ? 'bg-zinc-50' : ''}`}
+            onClick={() => handleSort('author')}
+          >
+            <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap ${sortField === 'author' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
+              <p className="leading-[20px] whitespace-pre">Author</p>
+            </div>
+            {getSortIcon('author')}
+          </div>
+          
+          {/* Last Reply Column */}
+          <div 
+            className={`box-border content-stretch flex items-center justify-center px-4 py-0 relative h-12 shrink-0 w-[118px] cursor-pointer hover:bg-zinc-50 ${sortField === 'lastReply' ? 'bg-zinc-50' : ''}`}
+            onClick={() => handleSort('lastReply')}
+          >
+            <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-center ${sortField === 'lastReply' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
+              <p className="leading-[20px] whitespace-pre">Last reply</p>
+            </div>
+            {getSortIcon('lastReply')}
+          </div>
+          
+          {/* Reply/View Column */}
+          <div 
+            className={`box-border content-stretch flex items-center justify-center px-4 py-0 relative h-12 shrink-0 w-[127px] cursor-pointer hover:bg-zinc-50 ${sortField === 'replies' ? 'bg-zinc-50' : ''}`}
+            onClick={() => handleSort('replies')}
+          >
+            <div className={`flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap ${sortField === 'replies' ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
+              <p className="leading-[20px] whitespace-pre">Reply/View</p>
+            </div>
+            {getSortIcon('replies')}
+          </div>
+        </div>
+        
+        {/* Table Body */}
+        <div className="content-stretch flex flex-col items-start justify-center relative shrink-0 w-full">
+          {isLoading ? (
+            <div className="box-border content-stretch flex items-center justify-center pl-0 pr-5 py-8 relative shrink-0 w-full border-b border-zinc-200">
+              <div className="flex items-center justify-center space-x-2">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                <span className="text-sm text-zinc-500">加载中...</span>
+              </div>
+            </div>
+          ) : topics.length === 0 ? (
+            <div className="box-border content-stretch flex items-center justify-center pl-0 pr-5 py-8 relative shrink-0 w-full border-b border-zinc-200">
+              <span className="text-sm text-zinc-500">暂无主题</span>
+            </div>
+          ) : (
+            topics.map((topic) => (
+              <div 
+                key={topic.id} 
+                className="box-border content-stretch flex items-center justify-start pl-0 pr-5 py-0 relative shrink-0 w-full border-b border-zinc-200 hover:bg-zinc-50"
+              >
+                {/* Checkbox */}
+                <div className="box-border content-stretch flex items-center justify-start p-[16px] relative shrink-0">
+                  <Checkbox
+                    checked={selectedTopics.includes(topic.id)}
+                    onCheckedChange={(checked) => onTopicSelect(topic.id, !!checked)}
+                    className="size-4"
+                  />
+                </div>
+                
+                {/* Category */}
+                <div className="box-border content-stretch flex items-center justify-center p-[16px] relative shrink-0 w-[87px]">
+                  <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-zinc-950">
+                    <p className="leading-[20px] whitespace-pre">{topic.category.name}</p>
+                  </div>
+                </div>
+                
+                {/* Title */}
+                <div className="basis-0 box-border content-stretch flex flex-col gap-2 items-start justify-center p-[16px] relative grow shrink-0">
+                  <div className="content-stretch flex gap-2 items-center justify-start relative shrink-0 w-full">
+                    {topic.isPinned && (
+                      <Pin className="relative shrink-0 size-4 text-orange-500" />
+                    )}
+                    {topic.isLocked && (
+                      <Lock className="relative shrink-0 size-4 text-red-500" />
+                    )}
+                    <div className="basis-0 flex flex-col font-medium grow justify-center leading-[0] min-h-px min-w-px relative shrink-0 text-[14px] text-zinc-950 hover:text-blue-600 cursor-pointer">
+                      <p className="leading-[20px]">{topic.title}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Tags */}
+                  {topic.tags.length > 0 && (
+                    <div className="content-start flex flex-wrap gap-2 items-start justify-start relative shrink-0 w-full">
+                      {topic.tags.map((tag) => (
+                        <div 
+                          key={tag.id}
+                          className="box-border content-stretch flex items-center justify-center px-2.5 py-0.5 relative rounded-[9999px] shrink-0 border border-zinc-200"
+                          style={{
+                            backgroundColor: tag.color ? `${tag.color}20` : undefined,
+                            borderColor: tag.color || undefined,
+                          }}
+                        >
+                          <div 
+                            className="flex flex-col font-semibold justify-center leading-[0] relative shrink-0 text-[12px] text-center text-nowrap"
+                            style={{ color: tag.color || '#09090b' }}
+                          >
+                            <p className="leading-[20px] whitespace-pre">{tag.name}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Description/Preview */}
+                  <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[#8e8e8e] text-[12px] w-full">
+                    <p className="leading-[20px] line-clamp-2">
+                      Available from version 6000.3.0a, we are introducing the UnifiedRayTracing API, a new library that enables ray tracing workloads on GPUs without dedicated hardware acceleration...Read more
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Author */}
+                <div className="box-border content-stretch flex flex-col items-center justify-center leading-[0] p-[16px] relative shrink-0 text-nowrap w-[118px]">
+                  <div className="flex flex-col font-medium justify-center relative shrink-0 text-[14px] text-zinc-950">
+                    <p className="leading-[20px] text-nowrap whitespace-pre">{topic.author.username}</p>
+                  </div>
+                  <div className="flex flex-col font-normal justify-center relative shrink-0 text-[#8e8e8e] text-[12px]">
+                    <p className="leading-[20px] text-nowrap whitespace-pre">{formatDate(topic.createdAt)}</p>
+                  </div>
+                </div>
+                
+                {/* Last Reply */}
+                <div className="box-border content-stretch flex flex-col items-center justify-center leading-[0] p-[16px] relative shrink-0 text-nowrap w-[118px]">
+                  {topic.lastPostedAt && topic.lastPoster ? (
+                    <>
+                      <div className="flex flex-col font-medium justify-center relative shrink-0 text-[14px] text-zinc-950">
+                        <p className="leading-[20px] text-nowrap whitespace-pre">{topic.lastPoster.username}</p>
+                      </div>
+                      <div className="flex flex-col font-normal justify-center relative shrink-0 text-[#8e8e8e] text-[12px]">
+                        <p className="leading-[20px] text-nowrap whitespace-pre">{formatDate(topic.lastPostedAt)}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col font-normal justify-center relative shrink-0 text-[#8e8e8e] text-[12px]">
+                      <p className="leading-[20px] text-nowrap whitespace-pre">No reply</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Reply/View Stats */}
+                <div className="box-border content-stretch flex flex-col items-center justify-center pl-8 pr-4 py-4 relative shrink-0 w-[127px]">
+                  <div className="content-stretch flex gap-1 items-center justify-start relative shrink-0">
+                    <MessageSquare className="relative shrink-0 size-4 text-zinc-500" />
+                    <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-right text-zinc-950">
+                      <p className="leading-[20px] whitespace-pre">{formatNumber(topic.replyCount)}</p>
+                    </div>
+                  </div>
+                  <div className="content-stretch flex gap-1 items-center justify-start relative shrink-0">
+                    <Eye className="relative shrink-0 size-4 text-zinc-500" />
+                    <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-nowrap text-right text-zinc-950">
+                      <p className="leading-[20px] whitespace-pre">{formatNumber(topic.viewCount)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
           )}
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">每页显示:</span>
-          <Select
-            value={rowsPerPage.toString()}
-            onValueChange={(value) => onRowsPerPageChange(parseInt(value))}
-          >
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-            </SelectContent>
-          </Select>
+      </div>
+      
+      {/* Bottom Pagination */}
+      <div className="box-border content-stretch flex items-center justify-between p-[16px] relative shrink-0 w-full">
+        <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-center text-nowrap text-zinc-500">
+          <p className="leading-[20px] whitespace-pre">{selectedTopics.length} of {totalRows} row(s) selected.</p>
         </div>
-      </div>
-
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={(checked) => onSelectAll(!!checked)}
-                />
-              </TableHead>
-              <TableHead>分类</TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleSort('title')}
+        <div className="content-stretch flex gap-6 items-center justify-start relative shrink-0">
+          {/* Rows per page */}
+          <div className="content-stretch flex gap-2 items-center justify-start relative shrink-0">
+            <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-center text-nowrap text-zinc-950">
+              <p className="leading-[20px] whitespace-pre">Rows per page</p>
+            </div>
+            <div className="content-stretch flex flex-col gap-2 items-start justify-start relative shrink-0 w-[70px]">
+              <select 
+                className="bg-white box-border content-stretch flex h-10 items-center justify-center px-3 py-2 relative rounded-[6px] shrink-0 w-full border border-zinc-200 text-[14px] text-zinc-900"
+                value={rowsPerPage}
+                onChange={(e) => onRowsPerPageChange(parseInt(e.target.value))}
               >
-                标题 {getSortIcon('title')}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleSort('author')}
-              >
-                作者 {getSortIcon('author')}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleSort('lastReply')}
-              >
-                最后回复 {getSortIcon('lastReply')}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleSort('replies')}
-              >
-                回复/查看 {getSortIcon('replies')}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                    <span>加载中...</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : topics.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  暂无主题
-                </TableCell>
-              </TableRow>
-            ) : (
-              topics.map((topic) => (
-                <TableRow key={topic.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedTopics.includes(topic.id)}
-                      onCheckedChange={(checked) => onTopicSelect(topic.id, !!checked)}
-                    />
-                  </TableCell>
-                  
-                  <TableCell>
-                    <Badge 
-                      variant="secondary" 
-                      className="font-medium"
-                    >
-                      {topic.category.name}
-                    </Badge>
-                  </TableCell>
-                  
-                  <TableCell className="max-w-md">
-                    <div className="space-y-1">
-                      <div className="flex items-start space-x-2">
-                        {topic.isPinned && (
-                          <Badge variant="outline" className="text-xs">置顶</Badge>
-                        )}
-                        {topic.isLocked && (
-                          <Badge variant="outline" className="text-xs">锁定</Badge>
-                        )}
-                        <h3 className="font-medium leading-none hover:text-primary cursor-pointer">
-                          {topic.title}
-                        </h3>
-                      </div>
-                      {topic.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {topic.tags.map((tag) => (
-                            <Badge
-                              key={tag.id}
-                              variant="outline"
-                              className="text-xs"
-                              style={{
-                                backgroundColor: tag.color ? `${tag.color}20` : undefined,
-                                borderColor: tag.color || undefined,
-                                color: tag.color || undefined,
-                              }}
-                            >
-                              {tag.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Avatar className="w-6 h-6">
-                        <AvatarImage src={topic.author.avatarUrl} />
-                        <AvatarFallback className="text-xs">
-                          {topic.author.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium">{topic.author.username}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      <Clock className="w-3 h-3 inline mr-1" />
-                      {formatDate(topic.createdAt)}
-                    </div>
-                  </TableCell>
-                  
-                  <TableCell>
-                    {topic.lastPostedAt && topic.lastPoster ? (
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <Avatar className="w-5 h-5">
-                            <AvatarFallback className="text-xs">
-                              {topic.lastPoster.username.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm">{topic.lastPoster.username}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatDate(topic.lastPostedAt)}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">无回复</span>
-                    )}
-                  </TableCell>
-                  
-                  <TableCell>
-                    <div className="flex items-center space-x-4 text-sm">
-                      <div className="flex items-center space-x-1">
-                        <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium">{formatNumber(topic.replyCount)}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Eye className="w-4 h-4 text-muted-foreground" />
-                        <span>{formatNumber(topic.viewCount)}</span>
-                      </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* 分页控制 */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            第 {currentPage} 页，共 {totalPages} 页
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
+          
+          {/* Page info */}
+          <div className="flex flex-col font-normal justify-center leading-[0] relative shrink-0 text-[14px] text-center text-nowrap text-zinc-950">
+            <p className="leading-[20px] whitespace-pre">Page {currentPage} of {totalPages}</p>
+          </div>
+          
+          {/* Navigation buttons */}
+          <div className="content-stretch flex gap-2 items-center justify-start relative shrink-0">
+            <button
+              className={`bg-white box-border content-stretch flex items-center justify-center px-4 py-2 relative rounded-[6px] shrink-0 size-10 border border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.05)] ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-50'}`}
               onClick={() => onPageChange(1)}
               disabled={currentPage === 1}
             >
-              首页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+              <ChevronsLeft className="size-6 text-zinc-700" />
+            </button>
+            <button
+              className={`bg-white box-border content-stretch flex items-center justify-center px-4 py-2 relative rounded-[6px] shrink-0 size-10 border border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.05)] ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-50'}`}
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
             >
-              上一页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+              <ChevronLeft className="size-6 text-zinc-700" />
+            </button>
+            <button
+              className={`bg-white box-border content-stretch flex items-center justify-center px-4 py-2 relative rounded-[6px] shrink-0 size-10 border border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.05)] ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-50'}`}
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
-              下一页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+              <ChevronRight className="size-6 text-zinc-700" />
+            </button>
+            <button
+              className={`bg-white box-border content-stretch flex items-center justify-center px-4 py-2 relative rounded-[6px] shrink-0 size-10 border border-zinc-200 shadow-[0px_1px_3px_0px_rgba(0,0,0,0.05)] ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-50'}`}
               onClick={() => onPageChange(totalPages)}
               disabled={currentPage === totalPages}
             >
-              末页
-            </Button>
+              <ChevronsRight className="size-6 text-zinc-700" />
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

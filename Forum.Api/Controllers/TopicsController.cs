@@ -15,6 +15,7 @@ public class TopicsController : ControllerBase
     private readonly IUserService _userService;
     private readonly ICategoryService _categoryService;
     private readonly ITagService _tagService;
+    private readonly IPostService _postService;
     private readonly ILogger<TopicsController> _logger;
 
     public TopicsController(
@@ -22,12 +23,14 @@ public class TopicsController : ControllerBase
         IUserService userService, 
         ICategoryService categoryService,
         ITagService tagService,
+        IPostService postService,
         ILogger<TopicsController> logger)
     {
         _topicService = topicService;
         _userService = userService;
         _categoryService = categoryService;
         _tagService = tagService;
+        _postService = postService;
         _logger = logger;
     }
 
@@ -108,6 +111,34 @@ public class TopicsController : ControllerBase
                 }
             }
 
+            // 获取回复统计和最后回复信息
+            var replyCounts = await _postService.GetReplyCountsByTopicIdsAsync(topicIds);
+            var lastPosts = await _postService.GetLastPostsByTopicIdsAsync(topicIds);
+            
+            // 获取最后回复者信息
+            var lastPosterIds = lastPosts.Values
+                .Where(p => p != null)
+                .Select(p => p!.AuthorId)
+                .Distinct()
+                .ToList();
+                
+            var lastPosters = new Dictionary<long, Models.Entities.User>();
+            foreach (var userId in lastPosterIds)
+            {
+                try
+                {
+                    var user = await _userService.GetByIdAsync(userId);
+                    if (user != null)
+                    {
+                        lastPosters[userId] = user;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get last poster {UserId}", userId);
+                }
+            }
+
             // 转换为DTO格式
             var topicDtos = topics.Select(t => new TopicDto
             {
@@ -150,10 +181,20 @@ public class TopicsController : ControllerBase
                 IsPinned = t.IsPinned,
                 IsLocked = t.IsLocked,
                 IsDeleted = t.IsDeleted,
-                ReplyCount = 0, // TODO: 从帖子表统计
+                ReplyCount = replyCounts.TryGetValue(t.Id, out var replyCount) ? replyCount : 0,
                 ViewCount = t.ViewCount,
-                LastPostedAt = t.LastPostedAt,
-                LastPoster = null, // TODO: 从最后回复获取
+                LastPostedAt = lastPosts.TryGetValue(t.Id, out var lastPost) && lastPost != null 
+                    ? lastPost.CreatedAt 
+                    : (DateTime?)null,
+                LastPoster = lastPosts.TryGetValue(t.Id, out var lastPostForPoster) && lastPostForPoster != null
+                    && lastPosters.TryGetValue(lastPostForPoster.AuthorId, out var lastPoster) 
+                    ? new UserSummaryDto
+                    {
+                        Id = lastPoster.Id.ToString(),
+                        Username = lastPoster.Username,
+                        AvatarUrl = lastPoster.AvatarUrl
+                    }
+                    : null,
                 CreatedAt = t.CreatedAt,
                 UpdatedAt = t.UpdatedAt
             }).ToArray();

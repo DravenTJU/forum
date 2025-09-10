@@ -36,15 +36,15 @@ CREATE TABLE tags (
 
 -- Insert default categories
 INSERT INTO categories (name, slug, description, color, `order`) VALUES
-('通用讨论', 'general', '通用话题讨论区', '#007acc', 1),
-('技术交流', 'tech', '技术相关讨论', '#10B981', 2),
-('产品反馈', 'feedback', '产品使用反馈和建议', '#F59E0B', 3),
-('公告通知', 'announcements', '官方公告和通知', '#EF4444', 0);
+('General Discussion', 'general', 'General topic discussion area', '#007acc', 1),
+('Tech Exchange', 'tech', 'Technology-related discussions', '#10B981', 2),
+('Product Feedback', 'feedback', 'Product usage feedback and suggestions', '#F59E0B', 3),
+('Announcements', 'announcements', 'Official announcements and notices', '#EF4444', 0);
 
 -- Insert default tags
 INSERT INTO tags (name, slug, description, color) VALUES
-('问题', 'question', '求助类问题', '#3B82F6'),
-('讨论', 'discussion', '开放式讨论', '#8B5CF6'),
-('分享', 'share', '经验分享', '#10B981'),
-('建议', 'suggestion', '功能建议', '#F59E0B'),
-('反馈', 'feedback', '问题反馈', '#EF4444');
+('Question', 'question', 'Help-seeking questions', '#3B82F6'),
+('Discussion', 'discussion', 'Open discussions', '#8B5CF6'),
+('Share', 'share', 'Experience sharing', '#10B981'),
+('Suggestion', 'suggestion', 'Feature suggestions', '#F59E0B'),
+('Feedback', 'feedback', 'Issue feedback', '#EF4444');

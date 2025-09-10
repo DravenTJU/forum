@@ -89,4 +89,95 @@ public class PostRepository : IPostRepository
         const string sql = "UPDATE posts SET is_deleted = 1, deleted_at = NOW(3) WHERE id = @Id";
         await connection.ExecuteAsync(sql, new { Id = id });
     }
+
+    public async Task<int> GetReplyCountByTopicIdAsync(long topicId)
+    {
+        using var connection = await _connectionFactory.CreateConnectionAsync();
+        
+        const string sql = @"
+            SELECT COUNT(*) 
+            FROM posts 
+            WHERE topic_id = @TopicId AND is_deleted = 0";
+
+        return await connection.QuerySingleAsync<int>(sql, new { TopicId = topicId });
+    }
+
+    public async Task<Post?> GetLastPostByTopicIdAsync(long topicId)
+    {
+        using var connection = await _connectionFactory.CreateConnectionAsync();
+        
+        const string sql = @"
+            SELECT id, topic_id as TopicId, author_id as AuthorId, content_md as ContentMd,
+                   reply_to_post_id as ReplyToPostId, is_edited as IsEdited, is_deleted as IsDeleted,
+                   deleted_at as DeletedAt, created_at as CreatedAt, updated_at as UpdatedAt
+            FROM posts 
+            WHERE topic_id = @TopicId AND is_deleted = 0
+            ORDER BY created_at DESC, id DESC 
+            LIMIT 1";
+
+        return await connection.QuerySingleOrDefaultAsync<Post>(sql, new { TopicId = topicId });
+    }
+
+    public async Task<Dictionary<long, int>> GetReplyCountsByTopicIdsAsync(IEnumerable<long> topicIds)
+    {
+        using var connection = await _connectionFactory.CreateConnectionAsync();
+        
+        if (!topicIds.Any()) return new Dictionary<long, int>();
+        
+        const string sql = @"
+            SELECT topic_id as TopicId, COUNT(*) as ReplyCount 
+            FROM posts 
+            WHERE topic_id IN @TopicIds AND is_deleted = 0
+            GROUP BY topic_id";
+
+        var results = await connection.QueryAsync<(long TopicId, int ReplyCount)>(sql, new { TopicIds = topicIds });
+        
+        var dictionary = results.ToDictionary(r => r.TopicId, r => r.ReplyCount);
+        
+        // 确保所有传入的主题ID都有对应的记录，没有帖子的主题设置为0
+        foreach (var topicId in topicIds)
+        {
+            if (!dictionary.ContainsKey(topicId))
+            {
+                dictionary[topicId] = 0;
+            }
+        }
+        
+        return dictionary;
+    }
+
+    public async Task<Dictionary<long, Post?>> GetLastPostsByTopicIdsAsync(IEnumerable<long> topicIds)
+    {
+        using var connection = await _connectionFactory.CreateConnectionAsync();
+        
+        if (!topicIds.Any()) return new Dictionary<long, Post?>();
+        
+        const string sql = @"
+            SELECT p1.id, p1.topic_id as TopicId, p1.author_id as AuthorId, p1.content_md as ContentMd,
+                   p1.reply_to_post_id as ReplyToPostId, p1.is_edited as IsEdited, p1.is_deleted as IsDeleted,
+                   p1.deleted_at as DeletedAt, p1.created_at as CreatedAt, p1.updated_at as UpdatedAt
+            FROM posts p1
+            INNER JOIN (
+                SELECT topic_id, MAX(created_at) as max_created_at, MAX(id) as max_id
+                FROM posts 
+                WHERE topic_id IN @TopicIds AND is_deleted = 0
+                GROUP BY topic_id
+            ) p2 ON p1.topic_id = p2.topic_id 
+               AND p1.created_at = p2.max_created_at 
+               AND p1.id = p2.max_id";
+
+        var posts = await connection.QueryAsync<Post>(sql, new { TopicIds = topicIds });
+        var dictionary = posts.ToDictionary(p => p.TopicId, p => (Post?)p);
+        
+        // 确保所有传入的主题ID都有对应的记录，没有帖子的主题设置为null
+        foreach (var topicId in topicIds)
+        {
+            if (!dictionary.ContainsKey(topicId))
+            {
+                dictionary[topicId] = null;
+            }
+        }
+        
+        return dictionary;
+    }
 }

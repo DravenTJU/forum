@@ -1,11 +1,11 @@
 -- =====================================================================
--- 论坛系统测试数据清理脚本
+-- Forum System Test Data Cleanup Script
 -- 
--- 描述：清理所有测试数据，保留系统默认数据
--- 版本：1.0
--- 创建日期：2025-08-25
+-- Description: Clean all test data, preserve system default data
+-- Version: 1.0
+-- Created: 2025-08-25
 -- 
--- ⚠️  警告：此脚本会删除所有用户数据，仅在开发/测试环境使用！
+-- ⚠️  Warning: This script will delete all user data, use only in development/testing environments!
 -- =====================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -14,10 +14,10 @@ SET AUTOCOMMIT = 0;
 START TRANSACTION;
 
 -- =====================================================================
--- 显示清理前的数据统计
+-- Display data statistics before cleanup
 -- =====================================================================
 
-SELECT '📊 清理前数据统计：' as Status;
+SELECT '📊 Data statistics before cleanup:' as Status;
 
 SELECT 'Users:' as Table_Name, COUNT(*) as Count FROM users
 UNION ALL
@@ -36,38 +36,38 @@ UNION ALL
 SELECT 'Refresh Tokens:' as Table_Name, COUNT(*) as Count FROM refresh_tokens;
 
 -- =====================================================================
--- 清理用户相关数据（保持关联完整性）
+-- Clean user-related data (maintain referential integrity)
 -- =====================================================================
 
--- 1. 清理帖子提及关系
+-- 1. Clean post mention relationships
 DELETE FROM post_mentions WHERE post_id > 0;
 
--- 2. 清理所有帖子
+-- 2. Clean all posts
 DELETE FROM posts WHERE id > 0;
 
--- 3. 清理主题标签关系
+-- 3. Clean topic-tag relationships
 DELETE FROM topic_tags WHERE topic_id > 0;
 
--- 4. 清理所有主题
+-- 4. Clean all topics
 DELETE FROM topics WHERE id > 0;
 
--- 5. 清理分类版主关系
+-- 5. Clean category moderator relationships
 DELETE FROM category_moderators WHERE user_id > 0;
 
--- 6. 清理用户角色
+-- 6. Clean user roles
 DELETE FROM user_roles WHERE user_id > 0;
 
--- 7. 清理刷新令牌
+-- 7. Clean refresh tokens
 DELETE FROM refresh_tokens WHERE user_id > 0;
 
--- 8. 清理邮箱验证令牌
+-- 8. Clean email verification tokens
 DELETE FROM email_verification_tokens WHERE user_id > 0;
 
--- 9. 最后清理用户
+-- 9. Finally clean users
 DELETE FROM users WHERE id > 0;
 
 -- =====================================================================
--- 重置自增ID
+-- Reset auto-increment IDs
 -- =====================================================================
 
 ALTER TABLE users AUTO_INCREMENT = 1;
@@ -77,16 +77,16 @@ ALTER TABLE email_verification_tokens AUTO_INCREMENT = 1;
 ALTER TABLE refresh_tokens AUTO_INCREMENT = 1;
 
 -- =====================================================================
--- 重置标签使用计数
+-- Reset tag usage count
 -- =====================================================================
 
 UPDATE tags SET usage_count = 0;
 
 -- =====================================================================
--- 验证清理结果
+-- Verify cleanup results
 -- =====================================================================
 
-SELECT '🧹 清理后数据统计：' as Status;
+SELECT '🧹 Data statistics after cleanup:' as Status;
 
 SELECT 'Users:' as Table_Name, COUNT(*) as Remaining FROM users
 UNION ALL
@@ -105,33 +105,33 @@ UNION ALL
 SELECT 'Refresh Tokens:' as Table_Name, COUNT(*) as Remaining FROM refresh_tokens;
 
 -- =====================================================================
--- 显示保留的系统数据
+-- Display preserved system data
 -- =====================================================================
 
-SELECT '📋 保留的系统数据：' as Status;
+SELECT '📋 Preserved system data:' as Status;
 
 SELECT 'Categories:' as Table_Name, COUNT(*) as Count FROM categories
 UNION ALL  
 SELECT 'Tags:' as Table_Name, COUNT(*) as Count FROM tags;
 
-SELECT '分类列表：' as Info;
+SELECT 'Category list:' as Info;
 SELECT id, name, slug, description FROM categories ORDER BY `order`;
 
-SELECT '标签列表：' as Info;  
+SELECT 'Tag list:' as Info;  
 SELECT id, name, slug, description, usage_count FROM tags ORDER BY id;
 
 -- =====================================================================
--- 提交清理操作
--- =====================================================================
+-- Commit cleanup operation
+-- =====
 
 COMMIT;
 SET AUTOCOMMIT = 1;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================================
--- 清理完成提示
+-- Cleanup completion message
 -- =====================================================================
 
-SELECT '✅ 测试数据清理完成！' as Status;
-SELECT '🔄 数据库已重置为初始状态，保留了系统默认的分类和标签' as Summary;
-SELECT '💡 如需重新生成测试数据，请运行 insert_test_data.sql' as Tip;
+SELECT '✅ Test data cleanup completed!' as Status;
+SELECT '🔄 Database has been reset to initial state, preserved system default categories and tags' as Summary;
+SELECT '💡 To regenerate test data, please run insert_test_data.sql' as Tip;
