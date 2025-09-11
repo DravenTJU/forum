@@ -74,8 +74,8 @@ const TopicContent = ({ topic, onReply }: TopicContentProps) => {
 
   return (
     <div className="bg-white rounded-lg border border-zinc-200 mb-6">
-      {/* 主题标题区 */}
-      <div className="px-6 pt-6 pb-4 border-b border-zinc-100">
+      {/* 主题标题和内容合并区域 */}
+      <div className="px-6 pt-6 pb-4">
         {/* 主题标题和状态 */}
         <div className="flex items-start gap-3 mb-4">
           {topic.isPinned && (
@@ -87,36 +87,6 @@ const TopicContent = ({ topic, onReply }: TopicContentProps) => {
           <h1 className="text-xl font-bold text-zinc-900 leading-tight flex-1">
             {topic.title}
           </h1>
-        </div>
-        
-        {/* 作者和发布信息 */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-zinc-200 flex items-center justify-center">
-              {topic.author.avatarUrl ? (
-                <img 
-                  src={topic.author.avatarUrl} 
-                  alt={topic.author.username}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <span className="text-sm font-medium text-zinc-600">
-                  {topic.author.username.charAt(0).toUpperCase()}
-                </span>
-              )}
-            </div>
-            <div>
-              <div className="font-medium text-zinc-900">
-                {topic.author.username}
-              </div>
-              <div className="text-sm text-zinc-500">
-                发布于 {formatDate(topic.createdAt)}
-                {topic.firstPost.isEdited && (
-                  <span className="ml-2 text-zinc-400">(已编辑)</span>
-                )}
-              </div>
-            </div>
-          </div>
           
           {/* 操作菜单 */}
           <DropdownMenu>
@@ -140,16 +110,40 @@ const TopicContent = ({ topic, onReply }: TopicContentProps) => {
           </DropdownMenu>
         </div>
         
-        {/* 统计信息 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 text-sm text-zinc-500">
-            <div className="flex items-center gap-1">
-              <MessageSquare className="w-4 h-4" />
-              <span>{formatNumber(topic.replyCount)} 回复</span>
+        {/* 作者信息、统计数据、分类标签 */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center">
+              {topic.author.avatarUrl ? (
+                <img 
+                  src={topic.author.avatarUrl} 
+                  alt={topic.author.username}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <span className="text-xs font-medium text-zinc-600">
+                  {topic.author.username.charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-1">
-              <Eye className="w-4 h-4" />
-              <span>{formatNumber(topic.viewCount)} 浏览</span>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-medium text-zinc-900">{topic.author.username}</span>
+              <span className="text-zinc-500">
+                {formatDate(topic.createdAt)}
+                {topic.firstPost.isEdited && (
+                  <span className="ml-1 text-zinc-400">(已编辑)</span>
+                )}
+              </span>
+              <div className="flex items-center gap-3 text-zinc-500">
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{formatNumber(topic.replyCount)} 回复</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Eye className="w-4 h-4" />
+                  <span>{formatNumber(topic.viewCount)} 浏览</span>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -177,21 +171,21 @@ const TopicContent = ({ topic, onReply }: TopicContentProps) => {
             )}
           </div>
         </div>
-      </div>
-      
-      {/* 首帖内容 */}
-      <div className="p-6">
-        {topic.firstPost.contentMd ? (
-          renderContent(topic.firstPost.contentMd)
-        ) : (
-          <div className="text-zinc-500 italic">
-            此主题暂无内容
-          </div>
-        )}
+        
+        {/* 首帖内容直接显示在这里 */}
+        <div className="mb-4">
+          {topic.firstPost.contentMd ? (
+            renderContent(topic.firstPost.contentMd)
+          ) : (
+            <div className="text-zinc-500 italic">
+              此主题暂无内容
+            </div>
+          )}
+        </div>
         
         {/* 被提及的用户 */}
         {topic.firstPost.mentions && topic.firstPost.mentions.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-zinc-100">
+          <div className="mb-4 pt-4 border-t border-zinc-100">
             <div className="text-sm text-zinc-500 mb-2">
               提及了:
             </div>
@@ -207,17 +201,9 @@ const TopicContent = ({ topic, onReply }: TopicContentProps) => {
             </div>
           </div>
         )}
-      </div>
-      
-      {/* 底部操作栏 */}
-      <div className="flex items-center justify-between px-6 py-4 bg-zinc-50 rounded-b-lg border-t border-zinc-100">
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-zinc-500">
-            #1 楼 (主题)
-          </span>
-        </div>
         
-        <div className="flex items-center gap-2">
+        {/* 回复按钮 */}
+        <div className="flex justify-end pt-4 border-t border-zinc-100">
           <Button 
             variant="outline" 
             size="sm"
