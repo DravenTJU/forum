@@ -24,6 +24,11 @@ public class PostService : IPostService
         return await _postRepository.GetByTopicIdAsync(topicId, limit, cursorId, cursorCreated);
     }
 
+    public async Task<IEnumerable<Post>> GetRepliesByTopicIdAsync(long topicId, int limit = 20, long? cursorId = null, DateTime? cursorCreated = null)
+    {
+        return await _postRepository.GetRepliesByTopicIdAsync(topicId, limit, cursorId, cursorCreated);
+    }
+
     public async Task<Post?> GetByIdAsync(long id)
     {
         return await _postRepository.GetByIdAsync(id);

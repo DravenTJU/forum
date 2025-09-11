@@ -49,7 +49,7 @@ public class PostsController : ControllerBase
                 return NotFound(ApiResponse.ErrorResult("TOPIC_NOT_FOUND", "主题不存在"));
             }
 
-            var posts = await _postService.GetByTopicIdAsync(topicIdLong, query.Limit, null, null);
+            var posts = await _postService.GetRepliesByTopicIdAsync(topicIdLong, query.Limit, null, null);
             var hasNext = posts.Count() >= query.Limit;
             var nextCursor = hasNext ? "next" : null;
 
