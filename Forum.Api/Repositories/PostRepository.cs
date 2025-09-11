@@ -118,6 +118,22 @@ public class PostRepository : IPostRepository
         return await connection.QuerySingleOrDefaultAsync<Post>(sql, new { TopicId = topicId });
     }
 
+    public async Task<Post?> GetFirstPostByTopicIdAsync(long topicId)
+    {
+        using var connection = await _connectionFactory.CreateConnectionAsync();
+        
+        const string sql = @"
+            SELECT id, topic_id as TopicId, author_id as AuthorId, content_md as ContentMd,
+                   reply_to_post_id as ReplyToPostId, is_edited as IsEdited, is_deleted as IsDeleted,
+                   deleted_at as DeletedAt, created_at as CreatedAt, updated_at as UpdatedAt
+            FROM posts 
+            WHERE topic_id = @TopicId AND is_deleted = 0 AND reply_to_post_id IS NULL
+            ORDER BY created_at ASC, id ASC 
+            LIMIT 1";
+
+        return await connection.QuerySingleOrDefaultAsync<Post>(sql, new { TopicId = topicId });
+    }
+
     public async Task<Dictionary<long, int>> GetReplyCountsByTopicIdsAsync(IEnumerable<long> topicIds)
     {
         using var connection = await _connectionFactory.CreateConnectionAsync();

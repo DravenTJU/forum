@@ -101,6 +101,11 @@ public class PostService : IPostService
         return await _postRepository.GetLastPostByTopicIdAsync(topicId);
     }
 
+    public async Task<Post?> GetFirstPostByTopicIdAsync(long topicId)
+    {
+        return await _postRepository.GetFirstPostByTopicIdAsync(topicId);
+    }
+
     public async Task<Dictionary<long, int>> GetReplyCountsByTopicIdsAsync(IEnumerable<long> topicIds)
     {
         return await _postRepository.GetReplyCountsByTopicIdsAsync(topicIds);

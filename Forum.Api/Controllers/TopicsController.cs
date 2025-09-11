@@ -230,6 +230,9 @@ public class TopicsController : ControllerBase
                 return NotFound(ApiResponse.ErrorResult("TOPIC_NOT_FOUND", "主题不存在"));
             }
 
+            // 获取真实的首帖数据
+            var firstPost = await _postService.GetFirstPostByTopicIdAsync(topicId);
+            
             var topicDetailDto = new TopicDetailDto
             {
                 Id = topic.Id.ToString(),
@@ -257,25 +260,25 @@ public class TopicsController : ControllerBase
                 LastPoster = null,
                 CreatedAt = topic.CreatedAt,
                 UpdatedAt = topic.UpdatedAt,
-                FirstPost = new PostDto
+                FirstPost = firstPost != null ? new PostDto
                 {
-                    Id = "p_" + topic.Id,
-                    TopicId = topic.Id.ToString(),
+                    Id = firstPost.Id.ToString(),
+                    TopicId = firstPost.TopicId.ToString(),
                     Author = new UserSummaryDto
                     {
-                        Id = topic.AuthorId.ToString(),
-                        Username = "user_" + topic.AuthorId,
+                        Id = firstPost.AuthorId.ToString(),
+                        Username = "user_" + firstPost.AuthorId,
                         AvatarUrl = null
                     },
-                    ContentMd = "# " + topic.Title + "\n\n主题内容...",
-                    ContentHtml = "<h1>" + topic.Title + "</h1><p>主题内容...</p>",
+                    ContentMd = firstPost.ContentMd,
+                    ContentHtml = ConvertMarkdownToHtml(firstPost.ContentMd),
                     ReplyToPost = null,
                     Mentions = new string[0],
-                    IsEdited = false,
-                    IsDeleted = false,
-                    CreatedAt = topic.CreatedAt,
-                    UpdatedAt = topic.UpdatedAt
-                }
+                    IsEdited = firstPost.IsEdited,
+                    IsDeleted = firstPost.IsDeleted,
+                    CreatedAt = firstPost.CreatedAt,
+                    UpdatedAt = firstPost.UpdatedAt
+                } : null
             };
 
             return Ok(ApiResponse<TopicDetailDto>.SuccessResult(topicDetailDto));

@@ -54,7 +54,7 @@ public class TopicDto
 public class TopicDetailDto : TopicDto
 {
     [JsonPropertyName("firstPost")]
-    public PostDto FirstPost { get; set; } = null!;
+    public PostDto? FirstPost { get; set; }
 }
 
 public class CreateTopicRequest
