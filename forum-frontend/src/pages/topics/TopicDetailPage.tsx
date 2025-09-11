@@ -81,6 +81,11 @@ export function TopicDetailPage() {
   const handlePostsSortChange = (sort: 'oldest' | 'newest') => {
     setPostsSortBy(sort);
   };
+  
+  // 处理返回主题列表
+  const handleBackToTopics = () => {
+    navigate('/');
+  };
 
   // 侧边栏内容
   const sidebarContent = (
@@ -173,6 +178,7 @@ export function TopicDetailPage() {
               onSortChange={handlePostsSortChange}
               isTopicLocked={topic.isLocked}
               onReply={handleReply}
+              onBackToTopics={handleBackToTopics}
             />
           )}
           

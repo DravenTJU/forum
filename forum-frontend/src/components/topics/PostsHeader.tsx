@@ -1,4 +1,4 @@
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -15,6 +15,7 @@ interface PostsHeaderProps {
   onSortChange: (sort: 'oldest' | 'newest') => void;
   isTopicLocked?: boolean;
   onReply?: () => void;
+  onBackToTopics?: () => void;
 }
 
 const PostsHeader = ({ 
@@ -22,7 +23,8 @@ const PostsHeader = ({
   sortBy, 
   onSortChange, 
   isTopicLocked = false, 
-  onReply 
+  onReply,
+  onBackToTopics
 }: PostsHeaderProps) => {
   const sortOptions = [
     { value: 'oldest', label: '时间顺序' },
@@ -32,6 +34,14 @@ const PostsHeader = ({
   return (
     <div className="flex items-center justify-between p-4 border-b bg-muted/20">
       <div className="flex items-center space-x-4">
+        {/* 返回主题列表按钮 */}
+        {onBackToTopics && (
+          <Button variant="ghost" size="sm" onClick={onBackToTopics} className="gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            返回列表
+          </Button>
+        )}
+        
         <h2 className="text-base font-medium text-zinc-900">
           {postsCount} 条回复
         </h2>
