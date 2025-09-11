@@ -6,9 +6,11 @@ import SearchHeader from '@/components/layout/SearchHeader';
 import CategorySidebar from '@/components/layout/CategorySidebar';
 import TopicContent from '@/components/topics/TopicContent';
 import PostsList from '@/components/topics/PostsList';
+import PostsHeader from '@/components/topics/PostsHeader';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useTopicDetail } from '@/hooks/useTopicDetail';
+import { useTopicPosts } from '@/hooks/useTopicDetail';
 import { useCategories, useTags } from '@/hooks/useTopics';
 
 export function TopicDetailPage() {
@@ -23,10 +25,16 @@ export function TopicDetailPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
+  // 回帖排序状态
+  const [postsSortBy, setPostsSortBy] = useState<'oldest' | 'newest'>('oldest');
+  
   // 数据获取
   const { data: topic, isLoading, isError, error } = useTopicDetail(topicId!);
   const { data: categories = [] } = useCategories();
   const { data: tags = [] } = useTags();
+  
+  // 获取回帖数据用于头部显示
+  const { data: postsData } = useTopicPosts(topicId!);
   
   // 搜索事件处理
   const handleSearchChange = (query: string) => {
@@ -67,6 +75,11 @@ export function TopicDetailPage() {
       return;
     }
     toast.info('回复功能开发中');
+  };
+  
+  // 处理回帖排序
+  const handlePostsSortChange = (sort: 'oldest' | 'newest') => {
+    setPostsSortBy(sort);
   };
 
   // 侧边栏内容
@@ -152,6 +165,17 @@ export function TopicDetailPage() {
         
         {/* 主内容区 */}
         <main className="flex-1 flex flex-col overflow-hidden">
+          {/* 回帖头部 - 放在与TopicFilters相同的位置 */}
+          {postsData?.pages.flatMap((page: any) => page.posts).length > 0 && (
+            <PostsHeader
+              postsCount={postsData?.pages.flatMap((page: any) => page.posts).length || 0}
+              sortBy={postsSortBy}
+              onSortChange={handlePostsSortChange}
+              isTopicLocked={topic.isLocked}
+              onReply={handleReply}
+            />
+          )}
+          
           {/* 主内容容器 */}
           <div className="flex-1 overflow-auto p-6">
             {/* 主题标题和首帖合并区域 */}
@@ -165,6 +189,8 @@ export function TopicDetailPage() {
               topicId={topic.id}
               isTopicLocked={topic.isLocked}
               onReply={handleReply}
+              sortBy={postsSortBy}
+              onSortChange={handlePostsSortChange}
             />
           </div>
         </main>

@@ -10,10 +10,22 @@ interface PostsListProps {
   topicId: string;
   isTopicLocked?: boolean;
   onReply?: () => void;
+  sortBy?: 'oldest' | 'newest';
+  onSortChange?: (sort: 'oldest' | 'newest') => void;
 }
 
-const PostsList = ({ topicId, isTopicLocked = false, onReply }: PostsListProps) => {
-  const [sortBy, setSortBy] = useState<'oldest' | 'newest'>('oldest');
+const PostsList = ({ 
+  topicId, 
+  isTopicLocked = false, 
+  onReply,
+  sortBy: externalSortBy,
+  onSortChange: externalOnSortChange
+}: PostsListProps) => {
+  const [internalSortBy, setInternalSortBy] = useState<'oldest' | 'newest'>('oldest');
+  
+  // 使用外部传入的排序状态或内部状态
+  const sortBy = externalSortBy ?? internalSortBy;
+  const handleSortChange = externalOnSortChange ?? setInternalSortBy;
   
   // 获取回帖数据
   const {
@@ -36,10 +48,7 @@ const PostsList = ({ topicId, isTopicLocked = false, onReply }: PostsListProps) 
     return sortBy === 'oldest' ? aTime - bTime : bTime - aTime;
   });
   
-  // 处理排序切换
-  const handleSortChange = (newSort: 'oldest' | 'newest') => {
-    setSortBy(newSort);
-  };
+  // 处理排序切换（已移至组件参数处理）
   
   // 加载更多
   const handleLoadMore = () => {
@@ -71,55 +80,6 @@ const PostsList = ({ topicId, isTopicLocked = false, onReply }: PostsListProps) 
 
   return (
     <div className="space-y-4">
-      {/* 回帖列表头部 */}
-      {allPosts.length > 0 && (
-        <div className="bg-white rounded-lg border border-zinc-200 px-6 py-3 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h2 className="text-base font-medium text-zinc-900">
-                {allPosts.length} 条回复
-              </h2>
-              
-              {/* 排序选项 */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-zinc-500">排序:</span>
-                <div className="flex bg-zinc-100 rounded p-1">
-                  <button
-                    onClick={() => handleSortChange('oldest')}
-                    className={`px-2 py-1 text-sm rounded ${
-                      sortBy === 'oldest'
-                        ? 'bg-white text-zinc-900 shadow-sm'
-                        : 'text-zinc-600 hover:text-zinc-900'
-                    }`}
-                  >
-                    时间顺序
-                  </button>
-                  <button
-                    onClick={() => handleSortChange('newest')}
-                    className={`px-2 py-1 text-sm rounded ${
-                      sortBy === 'newest'
-                        ? 'bg-white text-zinc-900 shadow-sm'
-                        : 'text-zinc-600 hover:text-zinc-900'
-                    }`}
-                  >
-                    最新优先
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            {/* 操作按钮 */}
-            <div className="flex items-center gap-2">
-              {!isTopicLocked && (
-                <Button onClick={onReply} size="sm" className="gap-2">
-                  <MessageSquare className="w-4 h-4" />
-                  回复
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* 加载状态 */}
       {isLoading && (
@@ -154,7 +114,7 @@ const PostsList = ({ topicId, isTopicLocked = false, onReply }: PostsListProps) 
             <PostCard
               key={post.id}
               post={post}
-              floorNumber={sortBy === 'oldest' ? index + 2 : allPosts.length - index + 1}
+              floorNumber={sortBy === 'oldest' ? index + 1 : allPosts.length - index}
               onReply={onReply}
             />
           ))}
