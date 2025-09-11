@@ -166,9 +166,9 @@ export function TopicDetailPage() {
         {/* 主内容区 */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* 回帖头部 - 放在与TopicFilters相同的位置 */}
-          {postsData?.pages.flatMap((page: any) => page.posts).length > 0 && (
+          {postsData?.pages && postsData.pages.flatMap((page: any) => page.posts).length > 0 && (
             <PostsHeader
-              postsCount={postsData?.pages.flatMap((page: any) => page.posts).length || 0}
+              postsCount={postsData.pages.flatMap((page: any) => page.posts).length || 0}
               sortBy={postsSortBy}
               onSortChange={handlePostsSortChange}
               isTopicLocked={topic.isLocked}
@@ -190,7 +190,6 @@ export function TopicDetailPage() {
               isTopicLocked={topic.isLocked}
               onReply={handleReply}
               sortBy={postsSortBy}
-              onSortChange={handlePostsSortChange}
             />
           </div>
         </main>

@@ -11,21 +11,18 @@ interface PostsListProps {
   isTopicLocked?: boolean;
   onReply?: () => void;
   sortBy?: 'oldest' | 'newest';
-  onSortChange?: (sort: 'oldest' | 'newest') => void;
 }
 
 const PostsList = ({ 
   topicId, 
   isTopicLocked = false, 
   onReply,
-  sortBy: externalSortBy,
-  onSortChange: externalOnSortChange
+  sortBy: externalSortBy
 }: PostsListProps) => {
-  const [internalSortBy, setInternalSortBy] = useState<'oldest' | 'newest'>('oldest');
+  const [internalSortBy] = useState<'oldest' | 'newest'>('oldest');
   
   // 使用外部传入的排序状态或内部状态
   const sortBy = externalSortBy ?? internalSortBy;
-  const handleSortChange = externalOnSortChange ?? setInternalSortBy;
   
   // 获取回帖数据
   const {
