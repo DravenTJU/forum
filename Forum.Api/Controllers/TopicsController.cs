@@ -4,6 +4,7 @@ using Forum.Api.Services;
 using Forum.Api.Models.DTOs;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using Markdig;
 
 namespace Forum.Api.Controllers;
 
@@ -486,4 +487,16 @@ public class TopicsController : ControllerBase
     }
 
     // TODO: 实现主题管理操作 (pin, lock, move) 在相关服务添加方法后
+
+    private static string ConvertMarkdownToHtml(string markdown)
+    {
+        if (string.IsNullOrEmpty(markdown))
+            return string.Empty;
+
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .Build();
+
+        return Markdown.ToHtml(markdown, pipeline);
+    }
 }
